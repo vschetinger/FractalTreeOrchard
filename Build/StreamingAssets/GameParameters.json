@@ -1,5 +1,5 @@
 {
-    "energyDepletionRate": 0.5,
+    "energyDepletionRate": 5,
     "energyRecoveryPerTargetFruit": 20.0,
     "rotationSpeed": 10.0
 
