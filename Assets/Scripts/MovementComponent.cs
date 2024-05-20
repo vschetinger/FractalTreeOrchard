@@ -11,9 +11,31 @@ public class MovementComponent : MonoBehaviour
     private float movementEnergyConsumption = 0.1f;
     [SerializeField]
     private float jumpEnergyConsumption = 1f;
+    [SerializeField]
+    private float rotationSpeed = 100f;
 
     private Vector3 moveBy;
     private Rigidbody rb;
+    private float rotationInput;
+
+    private GameControls controls; // Update with the correct generated class name
+
+    private void Awake()
+    {
+        controls = new GameControls(); // Ensure this matches the generated class name
+        controls.Player.RotateCamera.performed += ctx => rotationInput = ctx.ReadValue<float>();
+        controls.Player.RotateCamera.canceled += ctx => rotationInput = 0;
+    }
+
+    private void OnEnable()
+    {
+        controls.Enable();
+    }
+
+    private void OnDisable()
+    {
+        controls.Disable();
+    }
 
     private void Start()
     {
@@ -38,6 +60,7 @@ public class MovementComponent : MonoBehaviour
     void Update()
     {
         ExecuteMovement();
+        ExecuteRotation();
     }
 
     void ExecuteMovement()
@@ -54,6 +77,16 @@ public class MovementComponent : MonoBehaviour
             }
 
             GameManager.instance.currentEnergy -= movementEnergyConsumption * Time.deltaTime;
+        }
+    }
+
+    void ExecuteRotation()
+    {
+        if (rotationInput != 0)
+        {
+            float rotationAmount = rotationInput * rotationSpeed * Time.deltaTime;
+            transform.Rotate(0, rotationAmount, 0);
+            //Debug.Log("Rotating by: " + rotationAmount); // Add debug log
         }
     }
 }

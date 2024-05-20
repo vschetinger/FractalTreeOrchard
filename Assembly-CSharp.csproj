@@ -71,8 +71,10 @@
     <Compile Include="Assets/Samples/OpenAI Unity/0.2.0/Whisper/Whisper.cs" />
     <Compile Include="Assets/Scripts/MainMenu.cs" />
     <Compile Include="Assets/Scripts/MovementComponent.cs" />
+    <Compile Include="Assets/Scripts/GoogleSheetsTest.cs" />
     <Compile Include="Assets/Scripts/GameManager.cs" />
     <Compile Include="Assets/Scripts/TextMatrixOverlay.cs" />
+    <Compile Include="Assets/Input/GameControls.cs" />
     <Compile Include="Assets/Scripts/HungerBar.cs" />
     <Compile Include="Assets/Scripts/_Enums.cs" />
     <Compile Include="Assets/Scripts/DataStorage.cs" />
@@ -434,12 +436,28 @@
       <HintPath>Library/PackageCache/com.unity.testtools.codecoverage@1.2.4/lib/ReportGenerator/ReportGeneratorMerged.dll</HintPath>
       <Private>False</Private>
     </Reference>
+    <Reference Include="Google.Apis.Auth">
+      <HintPath>Assets/Plugins/google.apis.auth/Google.Apis.Auth.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
     <Reference Include="Unity.VisualScripting.Antlr3.Runtime">
       <HintPath>Library/PackageCache/com.unity.visualscripting@1.9.2/Runtime/VisualScripting.Flow/Dependencies/NCalc/Unity.VisualScripting.Antlr3.Runtime.dll</HintPath>
       <Private>False</Private>
     </Reference>
+    <Reference Include="Google.Apis.Core">
+      <HintPath>Assets/Plugins/google.apis.core/Google.Apis.Core.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
     <Reference Include="Newtonsoft.Json">
       <HintPath>Library/PackageCache/com.unity.nuget.newtonsoft-json@3.2.1/Runtime/Newtonsoft.Json.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="Google.Apis">
+      <HintPath>Assets/Plugins/google.apis/Google.Apis.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="Google.Apis.Sheets.v4">
+      <HintPath>Assets/Plugins/google.apis.sheets/Google.Apis.Sheets.v4.dll</HintPath>
       <Private>False</Private>
     </Reference>
     <Reference Include="netstandard">

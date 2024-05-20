@@ -1801,7 +1801,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!114 &348770719
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -3337,7 +3337,7 @@ RectTransform:
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
   m_AnchoredPosition: {x: -17, y: -71.8}
-  m_SizeDelta: {x: 800, y: 824.6}
+  m_SizeDelta: {x: 800, y: 770.9}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &759096715
 MonoBehaviour:
@@ -5969,6 +5969,7 @@ MonoBehaviour:
   rotationSpeed: 10
   targetWord: good
   avoidWord: bad
+  wordSelectionThreshold: 0.5
   maxPointsPerWord: 1000
   maxEnergy: 100
   currentEnergy: 0
@@ -6072,10 +6073,10 @@ RectTransform:
   m_Father: {fileID: 76666823}
   m_RootOrder: -1
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
-  m_AnchorMin: {x: 0.5, y: 0.5}
-  m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: 38.3, y: -2}
-  m_SizeDelta: {x: 649.7, y: 98.5}
+  m_AnchorMin: {x: 0, y: 1}
+  m_AnchorMax: {x: 0, y: 1}
+  m_AnchoredPosition: {x: 423.4, y: -379.2}
+  m_SizeDelta: {x: 646.7, y: 98.5}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &2021526540
 MonoBehaviour:
@@ -6103,8 +6104,8 @@ MonoBehaviour:
     you get points and nourishment if the word in the fruit was closer to your target
     word than your avoid word. "
   m_isRightToLeft: 0
-  m_fontAsset: {fileID: 11400000, guid: 46989dada8f2647a8ae03084201bd8bc, type: 2}
-  m_sharedMaterial: {fileID: -4346572058129977137, guid: 46989dada8f2647a8ae03084201bd8bc, type: 2}
+  m_fontAsset: {fileID: 11400000, guid: 3a3ec2fe2f1e340c5b7d11bb8443a82e, type: 2}
+  m_sharedMaterial: {fileID: -4576206401310418368, guid: 3a3ec2fe2f1e340c5b7d11bb8443a82e, type: 2}
   m_fontSharedMaterials: []
   m_fontMaterial: {fileID: 0}
   m_fontMaterials: []
@@ -6128,8 +6129,8 @@ MonoBehaviour:
   m_faceColor:
     serializedVersion: 2
     rgba: 4294967295
-  m_fontSize: 42.3
-  m_fontSizeBase: 42.3
+  m_fontSize: 34.3
+  m_fontSizeBase: 34.3
   m_fontWeight: 400
   m_enableAutoSizing: 0
   m_fontSizeMin: 18

@@ -8,6 +8,14 @@ using UnityEngine.SceneManagement;
 using UnityEngine.UI;
 using TMPro; // Make sure to include this at the top of your script
 
+using Google.Apis.Auth.OAuth2;
+using Google.Apis.Services;
+using Google.Apis.Sheets.v4;
+using Google.Apis.Sheets.v4.Data;
+using System;
+using Newtonsoft.Json;
+
+
 
 [System.Serializable]
 public class GameParameters
@@ -51,10 +59,19 @@ public class GameManager : MonoBehaviour
     public Button playButton;
 
 
-
+    //Canvases
     public GameObject gameOverUI = null;
     public GameObject canvasCentral;
     public GameObject canvasHelp;
+
+
+    //Highscore spreadsheet
+    private static readonly string[] Scopes = { SheetsService.Scope.Spreadsheets };
+    private static readonly string ApplicationName = "Your Application Name";
+    private SheetsService sheetsService;
+    private string spreadsheetId = "1FOAmGBrqS8n0QS9hmFCy7ZF0z6KLb8OioV7SV5fZYJo";
+    private string range = "Sheet1!A1:B";  // Adjust the range as needed
+
 
     public void AToggleHelp()
     {
@@ -65,6 +82,66 @@ public class GameManager : MonoBehaviour
             canvasHelp.SetActive(!canvasHelp.activeSelf);
         }
     }
+
+    private void InitializeGoogleSheets()
+    {
+        StartCoroutine(LoadGoogleCredentials());
+    }
+
+    private IEnumerator LoadGoogleCredentials()
+    {
+        string filePath = Path.Combine(Application.streamingAssetsPath, "fractaltreeorchard-highscores-77d4e8fb7122.json");
+        string url;
+
+        // For WebGL, use a relative URL
+        if (Application.platform == RuntimePlatform.WebGLPlayer)
+        {
+            url = filePath;
+        }
+        else
+        {
+            url = "file://" + filePath;
+        }
+
+        using (UnityWebRequest www = UnityWebRequest.Get(url))
+        {
+            yield return www.SendWebRequest();
+
+            if (www.result == UnityWebRequest.Result.Success)
+            {
+                string jsonContent = www.downloadHandler.text;
+                Debug.Log("Google Credentials JSON: " + jsonContent);
+
+                try
+                {
+                    // Convert the JSON content to a byte array
+                    byte[] jsonBytes = System.Text.Encoding.UTF8.GetBytes(jsonContent);
+
+                    // Use a MemoryStream to create the GoogleCredential
+                    using (var stream = new MemoryStream(jsonBytes))
+                    {
+                        GoogleCredential credential = GoogleCredential.FromStream(stream).CreateScoped(Scopes);
+
+                        sheetsService = new SheetsService(new BaseClientService.Initializer()
+                        {
+                            HttpClientInitializer = credential,
+                            ApplicationName = ApplicationName,
+                        });
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Debug.LogError("Error deserializing Google credentials: " + ex.Message);
+                }
+            }
+            else
+            {
+                Debug.LogError("Failed to load Google credentials: " + www.error);
+            }
+        }
+    }
+
+
 
 
     private IEnumerator LoadGameParameters()
@@ -116,6 +193,8 @@ public class GameManager : MonoBehaviour
 
 
             StartCoroutine(LoadEmbeddings());
+            InitializeGoogleSheets();
+            
             SceneManager.sceneLoaded += OnSceneLoaded;
             currentEnergy = maxEnergy;
             //Debug.Log($"Initial Energy: {currentEnergy}");
@@ -282,6 +361,7 @@ public class GameManager : MonoBehaviour
 
                     if (finalEssenceText!= null)
                     {
+                        WriteHighScoreToGoogleSheets(finalEssence, score);
                         finalEssenceText.text = $"{finalEssence}";
                     }
                     else
@@ -295,6 +375,19 @@ public class GameManager : MonoBehaviour
                 }
             }
         }
+    }
+
+    private void WriteHighScoreToGoogleSheets(string essence, long score)
+    {
+        var newRow = new List<object>() { essence, score };
+        var valueRange = new ValueRange();
+        valueRange.Values = new List<IList<object>> { newRow };
+
+        var appendRequest = sheetsService.Spreadsheets.Values.Append(valueRange, spreadsheetId, range);
+        appendRequest.ValueInputOption = SpreadsheetsResource.ValuesResource.AppendRequest.ValueInputOptionEnum.USERENTERED;
+        var appendResponse = appendRequest.Execute();
+
+        Debug.Log("Added high score to the spreadsheet.");
     }
 
     
@@ -321,14 +414,14 @@ public class GameManager : MonoBehaviour
             List<string> keys = new List<string>(embeddings.Keys);
             int thresholdCount = Mathf.FloorToInt(keys.Count * wordSelectionThreshold);
 
-            int randomTargetIndex = Random.Range(0, thresholdCount);
+            int randomTargetIndex = UnityEngine.Random.Range(0, thresholdCount);
             targetWord = keys[randomTargetIndex];
 
             // Ensure the Avoid word is different from the Target word
             string avoidWordCandidate;
             do
             {
-                int randomAvoidIndex = Random.Range(0, thresholdCount);
+                int randomAvoidIndex = UnityEngine.Random.Range(0, thresholdCount);
                 avoidWordCandidate = keys[randomAvoidIndex];
             } while (avoidWordCandidate == targetWord);
 
@@ -538,4 +631,38 @@ private string FindClosestWord(float[] averageEmbedding)
 
         return new string[0];
     }
+}
+
+[Serializable]
+public class JsonCredentialParameters
+{
+    [JsonProperty("type")]
+    public string Type { get; set; }
+
+    [JsonProperty("project_id")]
+    public string ProjectId { get; set; }
+
+    [JsonProperty("private_key_id")]
+    public string PrivateKeyId { get; set; }
+
+    [JsonProperty("private_key")]
+    public string PrivateKey { get; set; }
+
+    [JsonProperty("client_email")]
+    public string ClientEmail { get; set; }
+
+    [JsonProperty("client_id")]
+    public string ClientId { get; set; }
+
+    [JsonProperty("auth_uri")]
+    public string AuthUri { get; set; }
+
+    [JsonProperty("token_uri")]
+    public string TokenUri { get; set; }
+
+    [JsonProperty("auth_provider_x509_cert_url")]
+    public string AuthProviderX509CertUrl { get; set; }
+
+    [JsonProperty("client_x509_cert_url")]
+    public string ClientX509CertUrl { get; set; }
 }
