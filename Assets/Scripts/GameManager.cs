@@ -1,6 +1,7 @@
 using UnityEngine;
 using System.Collections.Generic;
 using System.IO;
+using System.Text;
 using System.Linq;
 using System.Collections;
 using UnityEngine.Networking;
@@ -15,6 +16,9 @@ using Google.Apis.Sheets.v4.Data;
 using System;
 using Newtonsoft.Json;
 
+using Org.BouncyCastle.Crypto;
+using Org.BouncyCastle.OpenSsl;
+using Org.BouncyCastle.Security;
 
 
 [System.Serializable]
@@ -71,6 +75,8 @@ public class GameManager : MonoBehaviour
     private SheetsService sheetsService;
     public string spreadsheetId = "1FOAmGBrqS8n0QS9hmFCy7ZF0z6KLb8OioV7SV5fZYJo";
     private string range = "Sheet1!A1:B";  // Adjust the range as needed
+    private string accessToken; // Store the access token
+
 
 
     public void AToggleHelp()
@@ -83,34 +89,71 @@ public class GameManager : MonoBehaviour
         }
     }
 
-    private void InitializeGoogleSheets()
+    private IEnumerator InitializeGoogleSheets()
     {
-        try
+        // Load Google credentials and get the access token
+        yield return StartCoroutine(LoadGoogleCredentials());
+    }
+
+    private IEnumerator LoadGoogleCredentials()
+    {
+        string filePath = Path.Combine(Application.streamingAssetsPath, "fractaltreeorchard-highscores-77d4e8fb7122.json");
+        string url = "file://" + filePath;
+
+        using (UnityWebRequest www = UnityWebRequest.Get(url))
         {
-            StartCoroutine(LoadGoogleCredentials());
-            Debug.Log("Started loading Google credentials");
-        }
-        catch (Exception ex)
-        {
-            Debug.LogError("Error initializing Google Sheets: " + ex.Message);
-            Debug.LogError("Stack Trace: " + ex.StackTrace);
+            yield return www.SendWebRequest();
+
+            if (www.result == UnityWebRequest.Result.Success)
+            {
+                string jsonContent = www.downloadHandler.text;
+                JsonCredentialParameters credentials = JsonConvert.DeserializeObject<JsonCredentialParameters>(jsonContent);
+                credentials.PrivateKey = credentials.PrivateKey.Replace("\\n", "\n");
+
+                // Get the access token
+                var initializer = new ServiceAccountCredential.Initializer(credentials.ClientEmail)
+                {
+                    ProjectId = credentials.ProjectId,
+                    KeyId = credentials.PrivateKeyId,
+                    Scopes = new[] { SheetsService.Scope.Spreadsheets }
+                }.FromPrivateKey(credentials.PrivateKey);
+
+                var serviceAccountCredential = new ServiceAccountCredential(initializer);
+
+                if (serviceAccountCredential == null)
+                {
+                    Debug.LogError("ServiceAccountCredential is null.");
+                    yield break;
+                }
+
+                if (serviceAccountCredential.Token == null)
+                {
+                    Debug.LogError("ServiceAccountCredential.Token is null.");
+                    yield break;
+                }
+
+                accessToken = serviceAccountCredential.Token.AccessToken;
+
+                if (string.IsNullOrEmpty(accessToken))
+                {
+                    Debug.LogError("Access token is null or empty.");
+                    yield break;
+                }
+
+                Debug.Log("Access token successfully obtained.");
+            }
+            else
+            {
+                Debug.LogError("Failed to load Google credentials: " + www.error);
+            }
         }
     }
 
-private IEnumerator LoadGoogleCredentials()
+
+ private IEnumerator GetAccessToken()
 {
     string filePath = Path.Combine(Application.streamingAssetsPath, "fractaltreeorchard-highscores-77d4e8fb7122.json");
-    string url;
-
-    // For WebGL, use a relative URL
-    if (Application.platform == RuntimePlatform.WebGLPlayer)
-    {
-        url = filePath;
-    }
-    else
-    {
-        url = "file://" + filePath;
-    }
+    string url = "file://" + filePath;
 
     using (UnityWebRequest www = UnityWebRequest.Get(url))
     {
@@ -119,55 +162,82 @@ private IEnumerator LoadGoogleCredentials()
         if (www.result == UnityWebRequest.Result.Success)
         {
             string jsonContent = www.downloadHandler.text;
-            Debug.Log("Google Credentials JSON: " + jsonContent);
+            JsonCredentialParameters credentials = JsonConvert.DeserializeObject<JsonCredentialParameters>(jsonContent);
+            credentials.PrivateKey = credentials.PrivateKey.Replace("\\n", "\n");
 
-            try
+            // Extract the Base64-encoded key data from the PEM format
+            string privateKeyPem = credentials.PrivateKey;
+            string privateKeyBase64 = privateKeyPem
+                .Replace("-----BEGIN PRIVATE KEY-----", "")
+                .Replace("-----END PRIVATE KEY-----", "")
+                .Replace("\n", "")
+                .Replace("\r", "");
+
+            // Create the JWT assertion
+            var header = new { alg = "RS256", typ = "JWT" };
+            var claimSet = new
             {
-                // Log the length of the JSON content
-                Debug.Log("JSON Content Length: " + jsonContent.Length);
+                iss = credentials.ClientEmail,
+                scope = "https://www.googleapis.com/auth/spreadsheets",
+                aud = "https://oauth2.googleapis.com/token",
+                exp = ((DateTimeOffset)DateTime.UtcNow.AddHours(1)).ToUnixTimeSeconds(),
+                iat = ((DateTimeOffset)DateTime.UtcNow).ToUnixTimeSeconds()
+            };
 
-                // Attempt to parse the JSON content using Newtonsoft.Json
-                JsonCredentialParameters credentials = JsonConvert.DeserializeObject<JsonCredentialParameters>(jsonContent);
-                Debug.Log("Parsed JSON successfully");
+            string headerEncoded = Base64UrlEncode(JsonConvert.SerializeObject(header));
+            string claimSetEncoded = Base64UrlEncode(JsonConvert.SerializeObject(claimSet));
+            string unsignedToken = $"{headerEncoded}.{claimSetEncoded}";
 
-                // Log each field of the parsed credentials
-                Debug.Log("Type: " + credentials.Type);
-                Debug.Log("Project ID: " + credentials.ProjectId);
-                Debug.Log("Private Key ID: " + credentials.PrivateKeyId);
-                Debug.Log("Private Key: " + credentials.PrivateKey);
-                Debug.Log("Client Email: " + credentials.ClientEmail);
-                Debug.Log("Client ID: " + credentials.ClientId);
-                Debug.Log("Auth URI: " + credentials.AuthUri);
-                Debug.Log("Token URI: " + credentials.TokenUri);
-                Debug.Log("Auth Provider X509 Cert URL: " + credentials.AuthProviderX509CertUrl);
-                Debug.Log("Client X509 Cert URL: " + credentials.ClientX509CertUrl);
+            // Use BouncyCastle to sign the JWT
+            AsymmetricKeyParameter privateKey;
+            using (var reader = new StringReader(privateKeyPem))
+            {
+                var pemReader = new PemReader(reader);
+                var keyObject = pemReader.ReadObject();
 
-                // Normalize line endings in the private key
-                credentials.PrivateKey = credentials.PrivateKey.Replace("\\n", "\n");
-                Debug.Log("Normalized Private Key: " + credentials.PrivateKey);
-
-                // Manually create the ServiceAccountCredential
-                var initializer = new ServiceAccountCredential.Initializer(credentials.ClientEmail)
+                if (keyObject is AsymmetricCipherKeyPair keyPair)
                 {
-                    ProjectId = credentials.ProjectId,
-                    KeyId = credentials.PrivateKeyId,
-                    Scopes = Scopes
-                }.FromPrivateKey(credentials.PrivateKey);
-
-                var serviceAccountCredential = new ServiceAccountCredential(initializer);
-                Debug.Log("Created ServiceAccountCredential successfully");
-
-                sheetsService = new SheetsService(new BaseClientService.Initializer()
+                    privateKey = keyPair.Private;
+                }
+                else if (keyObject is AsymmetricKeyParameter keyParameter)
                 {
-                    HttpClientInitializer = serviceAccountCredential,
-                    ApplicationName = ApplicationName,
-                });
-                Debug.Log("Initialized SheetsService successfully");
+                    privateKey = keyParameter;
+                }
+                else
+                {
+                    Debug.LogError("Unsupported key type.");
+                    yield break;
+                }
             }
-            catch (Exception ex)
+
+            var signer = SignerUtilities.GetSigner("SHA256withRSA");
+            signer.Init(true, privateKey);
+            signer.BlockUpdate(Encoding.UTF8.GetBytes(unsignedToken), 0, unsignedToken.Length);
+            byte[] signature = signer.GenerateSignature();
+            string signedToken = $"{unsignedToken}.{Base64UrlEncode(signature)}";
+
+            // Create the request body
+            var requestBody = new Dictionary<string, string>
             {
-                Debug.LogError("Error deserializing Google credentials: " + ex.Message);
-                Debug.LogError("Stack Trace: " + ex.StackTrace);
+                { "grant_type", "urn:ietf:params:oauth:grant-type:jwt-bearer" },
+                { "assertion", signedToken }
+            };
+
+            // Make the request to the token endpoint
+            using (UnityWebRequest tokenRequest = UnityWebRequest.Post("https://oauth2.googleapis.com/token", requestBody))
+            {
+                yield return tokenRequest.SendWebRequest();
+
+                if (tokenRequest.result == UnityWebRequest.Result.Success)
+                {
+                    var tokenResponse = JsonConvert.DeserializeObject<Dictionary<string, string>>(tokenRequest.downloadHandler.text);
+                    accessToken = tokenResponse["access_token"];
+                    Debug.Log("Access token successfully obtained.");
+                }
+                else
+                {
+                    Debug.LogError("Failed to obtain access token: " + tokenRequest.error);
+                }
             }
         }
         else
@@ -176,8 +246,16 @@ private IEnumerator LoadGoogleCredentials()
         }
     }
 }
+    private string Base64UrlEncode(string input)
+    {
+        var bytes = Encoding.UTF8.GetBytes(input);
+        return Convert.ToBase64String(bytes).TrimEnd('=').Replace('+', '-').Replace('/', '_');
+    }
 
-
+    private string Base64UrlEncode(byte[] input)
+    {
+        return Convert.ToBase64String(input).TrimEnd('=').Replace('+', '-').Replace('/', '_');
+    }
 
 
     private IEnumerator LoadGameParameters()
@@ -397,7 +475,7 @@ private IEnumerator LoadGoogleCredentials()
 
                     if (finalEssenceText != null)
                     {
-                        WriteHighScoreToGoogleSheets(finalEssence, score, spreadsheetId);
+                        StartCoroutine(WriteHighScoreToGoogleSheets(finalEssence, score, spreadsheetId));
                         finalEssenceText.text = $"{finalEssence}";
                         Debug.Log("Final Essence Text: " + finalEssence);
                     }
@@ -414,45 +492,69 @@ private IEnumerator LoadGoogleCredentials()
         }
     }
 
-   private void WriteHighScoreToGoogleSheets(string essence, long score, string spreadsheetId)
-   {
-       try
-       {
-           Debug.Log("Starting WriteHighScoreToGoogleSheets");
+   private IEnumerator WriteHighScoreToGoogleSheets(string essence, long score, string spreadsheetId)
+{
+    Debug.Log("Starting WriteHighScoreToGoogleSheets");
 
-           // Check if spreadsheetId is null or empty
-           if (string.IsNullOrEmpty(spreadsheetId))
-           {
-               Debug.LogError("Spreadsheet ID is null or empty");
-               return;
-           }
+    // Check if spreadsheetId is null or empty
+    if (string.IsNullOrEmpty(spreadsheetId))
+    {
+        Debug.LogError("Spreadsheet ID is null or empty");
+        yield break;
+    }
 
-           Debug.Log("Spreadsheet ID: " + spreadsheetId);
+    Debug.Log("Spreadsheet ID: " + spreadsheetId);
 
-           // Create a new row with the essence and score
-           var newRow = new List<object>() { essence, score };
-           Debug.Log("Created new row: " + string.Join(", ", newRow));
+    // Create a new row with the essence and score
+    var newRow = new List<object>() { essence, score };
+    Debug.Log("Created new row: " + string.Join(", ", newRow));
 
-           // Create a ValueRange object and set its values
-           var valueRange = new ValueRange();
-           valueRange.Values = new List<IList<object>> { newRow };
-           Debug.Log("Created ValueRange with values: " + JsonConvert.SerializeObject(valueRange.Values));
+    // Create a GoogleSheetsPayload object and set its values
+    var payload = new GoogleSheetsPayload
+    {
+        Values = new List<IList<object>> { newRow }
+    };
 
-           // Create an AppendRequest
-           var appendRequest = sheetsService.Spreadsheets.Values.Append(valueRange, spreadsheetId, range);
-           appendRequest.ValueInputOption = SpreadsheetsResource.ValuesResource.AppendRequest.ValueInputOptionEnum.USERENTERED;
-           Debug.Log("Created AppendRequest with ValueInputOption: " + appendRequest.ValueInputOption);
+    Debug.Log("Created GoogleSheetsPayload with values: " + JsonConvert.SerializeObject(payload.Values));
 
-           // Execute the AppendRequest
-           var appendResponse = appendRequest.Execute();
-           Debug.Log("AppendRequest executed successfully. Response: " + JsonConvert.SerializeObject(appendResponse));
-       }
-       catch (Exception ex)
-       {
-           Debug.LogError("Error in WriteHighScoreToGoogleSheets: " + ex.Message);
-           Debug.LogError("Stack Trace: " + ex.StackTrace);
-       }
-   }
+    // Serialize the GoogleSheetsPayload object to JSON
+    string jsonPayload = JsonConvert.SerializeObject(payload);
+    Debug.Log("JSON Payload: " + jsonPayload);
+
+    // Create the request URL
+    string url = $"https://sheets.googleapis.com/v4/spreadsheets/{spreadsheetId}/values/{range}:append?valueInputOption=USER_ENTERED";
+
+    // Create the UnityWebRequest
+    UnityWebRequest request = new UnityWebRequest(url, "POST");
+    byte[] bodyRaw = Encoding.UTF8.GetBytes(jsonPayload);
+    request.uploadHandler = new UploadHandlerRaw(bodyRaw);
+    request.downloadHandler = new DownloadHandlerBuffer();
+    request.SetRequestHeader("Content-Type", "application/json");
+    request.SetRequestHeader("Authorization", "Bearer " + accessToken);
+
+    // Send the request
+    yield return request.SendWebRequest();
+
+    try
+    {
+        if (request.result == UnityWebRequest.Result.Success)
+        {
+            Debug.Log("AppendRequest executed successfully. Response: " + request.downloadHandler.text);
+        }
+        else
+        {
+            Debug.LogError("Error in WriteHighScoreToGoogleSheets: " + request.error);
+            Debug.LogError("Response Code: " + request.responseCode);
+            Debug.LogError("Error Message: " + request.downloadHandler.text);
+        }
+    }
+    catch (Exception ex)
+    {
+        Debug.LogError("Error in WriteHighScoreToGoogleSheets: " + ex.Message);
+        Debug.LogError("Stack Trace: " + ex.StackTrace);
+    }
+}
+
 
     
 
@@ -469,6 +571,7 @@ private IEnumerator LoadGoogleCredentials()
         {
             Debug.LogError("CanvasCentral or CanvasHelp not assigned in the Inspector.");
         }
+        StartCoroutine(GetAccessToken());
     }
 
     private void SelectRandomWords()
@@ -731,4 +834,10 @@ public class JsonCredentialParameters
 
     [JsonProperty("client_x509_cert_url")]
     public string ClientX509CertUrl { get; set; }
+}
+
+public class GoogleSheetsPayload
+{
+    [JsonProperty("values")]
+    public List<IList<object>> Values { get; set; }
 }

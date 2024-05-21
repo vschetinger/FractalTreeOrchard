@@ -1,0 +1,13 @@
+{
+  "type": "service_account",
+  "project_id": "fractaltreeorchard-highscores",
+  "private_key_id": "77d4e8fb712288ee23afa602ea13a64c131e3def",
+  "private_key": "-----BEGIN PRIVATE KEY-----\nMIIEvwIBADANBgkqhkiG9w0BAQEFAASCBKkwggSlAgEAAoIBAQCx+DaY0jnl9/bK\nvevXCejHsG2CtnWko+5+L5jHTq3ltFgwyKjujIwTYAq1rFcPcsNU6i1yepfMlC3v\nitwKoBBkwuxghbeu4M7g6EYFLfw8FPxSRGSF8RhsBGYWF12FQk7APzS7dQLoBhF2\nGg7kx5MlWrtFmnhmBdVzlWBW1Vogco9mziLDB8AZzuvM7hLWrFLmFChL1adgOorh\nwnNO8YoeTtcFrSDCk0mKm9FDGIACHzDvw65ZCkP4Fz/qzH2PQda/DvrW6fFGyhd1\nSpjinOnzDKclU6igO3mjwHC6zBThdTJu1EMXYTmvz7Nfz+Sctu54AdtOSLexVh7i\nl1KXo0ZRAgMBAAECggEAG7pXMUyxuh992z0naT/RPYmCqmaooh/raMwcItNimyMT\nyXf9//q0WVFxobgJ8W15OvnoXkl07KoalRN+sIYbP8Ox5eD3ix7aBKcTv7tYLPk9\nDck7mzXCzxOJX0BBMSGxWNkQK3Ox4foODudE8kaY6a0+97t3LjgS91jq42SGz/6e\nrb0nJfYM2GJxriwkJkEuJbqwt4MQYx3lM9GWORY1/K66OGgkg44X1lWhgzcr+/bN\noAPC30Qr7o3NTnAFwmstZho77TOXUbt2+/ny9uw50HSn9FSj7BW7c/s+cd08Jr8R\nmICkro44B56XV2zG5CdHgooah8vANsRTuQhkHMj8VQKBgQDjT+dfBNvfnQyqrGW+\nyOeW3Tdams2HaDbztznV5GlXtT/EiSEt5oz9IySm78VEqa6k72dif6ipbq63hTu8\nKpgQgWOyYBxR1fh6HmHt2UYAS7K0mxHIVl+zhybXRI/1XcildN1qWDq8Y442H8I0\njnuLj7Lz3BS1jSQ6N/dr4KcrTQKBgQDIbiE6ap8cZC5uNyhqQd8f9bY9CShel9nd\nAqMwlQlNJUqLZbQfJL39BEbWXU/BH8uvrTafbLhD1vfAa2YdwJPKiJ4JyvyrT23H\nv+XeKr+5lKLaBtEncT+W2+EC9Ei/C6aTN6wKdwjKO/MxC2zYapduxVfPHEAnwspn\ndML8PZkdFQKBgQCEQXJaG6aeVW8QQpw0RApTAcT6J4Wb2ivW4214IJyWFnPSswKm\nBTVU90SVCH6bc6qUdmKNsb79TdPEHXXjBllRiSbrmvX/O2KGEvVhgQA0ndaNNIhF\nKtQlzWXw7Ahid72NXxCQlmMeR0JwBUxmbdw+GE7DifJWq5c/dF612pEJJQKBgQCf\nNSvb1TnSOZnQHqxRy0VLg8hgr1eL3B9IuYGbY6dhyk9ubzkmy+7GfpEuUiy6AWGw\niGytMpUj/iwKgsU4uPIsnVy79qvCAHP5iWs0kMx+w5ygh224YPLcCIix6g2nA8Ar\njLtyDJ/E1N4WhTbOqczkRom7kHs9mjNg/pSr/NoVCQKBgQDGZhA+mJX0+udTm+2c\nw8PwOhu93dePuu+xeG0xK2xCodG1EtWjBshZejNkRG0UjFvi1C4q8AE4iXkwqAtp\nSV9DKGi1k/jmMH5Yc0ldZvKn2wdWlhTQTKTsFVRzjdcWxI95tABD1FdO1jIxcqsp\nAAcT454zwDAaxqwfdCnQGBpVZw==\n-----END PRIVATE KEY-----\n",
+  "client_email": "fractaltreeorchard-highscores@fractaltreeorchard-highscores.iam.gserviceaccount.com",
+  "client_id": "114661909871545170685",
+  "auth_uri": "https://accounts.google.com/o/oauth2/auth",
+  "token_uri": "https://oauth2.googleapis.com/token",
+  "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
+  "client_x509_cert_url": "https://www.googleapis.com/robot/v1/metadata/x509/fractaltreeorchard-highscores%40fractaltreeorchard-highscores.iam.gserviceaccount.com",
+  "universe_domain": "googleapis.com"
+}
