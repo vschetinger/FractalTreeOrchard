@@ -69,7 +69,7 @@ public class GameManager : MonoBehaviour
     private static readonly string[] Scopes = { SheetsService.Scope.Spreadsheets };
     private static readonly string ApplicationName = "Your Application Name";
     private SheetsService sheetsService;
-    private string spreadsheetId = "1FOAmGBrqS8n0QS9hmFCy7ZF0z6KLb8OioV7SV5fZYJo";
+    public string spreadsheetId = "1FOAmGBrqS8n0QS9hmFCy7ZF0z6KLb8OioV7SV5fZYJo";
     private string range = "Sheet1!A1:B";  // Adjust the range as needed
 
 
@@ -85,61 +85,97 @@ public class GameManager : MonoBehaviour
 
     private void InitializeGoogleSheets()
     {
-        StartCoroutine(LoadGoogleCredentials());
+        try
+        {
+            StartCoroutine(LoadGoogleCredentials());
+            Debug.Log("Started loading Google credentials");
+        }
+        catch (Exception ex)
+        {
+            Debug.LogError("Error initializing Google Sheets: " + ex.Message);
+            Debug.LogError("Stack Trace: " + ex.StackTrace);
+        }
     }
 
-    private IEnumerator LoadGoogleCredentials()
-    {
-        string filePath = Path.Combine(Application.streamingAssetsPath, "fractaltreeorchard-highscores-77d4e8fb7122.json");
-        string url;
+private IEnumerator LoadGoogleCredentials()
+{
+    string filePath = Path.Combine(Application.streamingAssetsPath, "fractaltreeorchard-highscores-77d4e8fb7122.json");
+    string url;
 
-        // For WebGL, use a relative URL
-        if (Application.platform == RuntimePlatform.WebGLPlayer)
+    // For WebGL, use a relative URL
+    if (Application.platform == RuntimePlatform.WebGLPlayer)
+    {
+        url = filePath;
+    }
+    else
+    {
+        url = "file://" + filePath;
+    }
+
+    using (UnityWebRequest www = UnityWebRequest.Get(url))
+    {
+        yield return www.SendWebRequest();
+
+        if (www.result == UnityWebRequest.Result.Success)
         {
-            url = filePath;
+            string jsonContent = www.downloadHandler.text;
+            Debug.Log("Google Credentials JSON: " + jsonContent);
+
+            try
+            {
+                // Log the length of the JSON content
+                Debug.Log("JSON Content Length: " + jsonContent.Length);
+
+                // Attempt to parse the JSON content using Newtonsoft.Json
+                JsonCredentialParameters credentials = JsonConvert.DeserializeObject<JsonCredentialParameters>(jsonContent);
+                Debug.Log("Parsed JSON successfully");
+
+                // Log each field of the parsed credentials
+                Debug.Log("Type: " + credentials.Type);
+                Debug.Log("Project ID: " + credentials.ProjectId);
+                Debug.Log("Private Key ID: " + credentials.PrivateKeyId);
+                Debug.Log("Private Key: " + credentials.PrivateKey);
+                Debug.Log("Client Email: " + credentials.ClientEmail);
+                Debug.Log("Client ID: " + credentials.ClientId);
+                Debug.Log("Auth URI: " + credentials.AuthUri);
+                Debug.Log("Token URI: " + credentials.TokenUri);
+                Debug.Log("Auth Provider X509 Cert URL: " + credentials.AuthProviderX509CertUrl);
+                Debug.Log("Client X509 Cert URL: " + credentials.ClientX509CertUrl);
+
+                // Normalize line endings in the private key
+                credentials.PrivateKey = credentials.PrivateKey.Replace("\\n", "\n");
+                Debug.Log("Normalized Private Key: " + credentials.PrivateKey);
+
+                // Manually create the ServiceAccountCredential
+                var initializer = new ServiceAccountCredential.Initializer(credentials.ClientEmail)
+                {
+                    ProjectId = credentials.ProjectId,
+                    KeyId = credentials.PrivateKeyId,
+                    Scopes = Scopes
+                }.FromPrivateKey(credentials.PrivateKey);
+
+                var serviceAccountCredential = new ServiceAccountCredential(initializer);
+                Debug.Log("Created ServiceAccountCredential successfully");
+
+                sheetsService = new SheetsService(new BaseClientService.Initializer()
+                {
+                    HttpClientInitializer = serviceAccountCredential,
+                    ApplicationName = ApplicationName,
+                });
+                Debug.Log("Initialized SheetsService successfully");
+            }
+            catch (Exception ex)
+            {
+                Debug.LogError("Error deserializing Google credentials: " + ex.Message);
+                Debug.LogError("Stack Trace: " + ex.StackTrace);
+            }
         }
         else
         {
-            url = "file://" + filePath;
-        }
-
-        using (UnityWebRequest www = UnityWebRequest.Get(url))
-        {
-            yield return www.SendWebRequest();
-
-            if (www.result == UnityWebRequest.Result.Success)
-            {
-                string jsonContent = www.downloadHandler.text;
-                Debug.Log("Google Credentials JSON: " + jsonContent);
-
-                try
-                {
-                    // Convert the JSON content to a byte array
-                    byte[] jsonBytes = System.Text.Encoding.UTF8.GetBytes(jsonContent);
-
-                    // Use a MemoryStream to create the GoogleCredential
-                    using (var stream = new MemoryStream(jsonBytes))
-                    {
-                        GoogleCredential credential = GoogleCredential.FromStream(stream).CreateScoped(Scopes);
-
-                        sheetsService = new SheetsService(new BaseClientService.Initializer()
-                        {
-                            HttpClientInitializer = credential,
-                            ApplicationName = ApplicationName,
-                        });
-                    }
-                }
-                catch (Exception ex)
-                {
-                    Debug.LogError("Error deserializing Google credentials: " + ex.Message);
-                }
-            }
-            else
-            {
-                Debug.LogError("Failed to load Google credentials: " + www.error);
-            }
+            Debug.LogError("Failed to load Google credentials: " + www.error);
         }
     }
+}
 
 
 
@@ -333,7 +369,7 @@ public class GameManager : MonoBehaviour
     private void GameOver()
     {
         // Assuming gameOverUI is the root of your UI hierarchy, e.g., CanvasGameOver
-        if (gameOverUI!= null)
+        if (gameOverUI != null)
         {
             // Activate the Game Over UI
             gameOverUI.SetActive(true);
@@ -341,28 +377,29 @@ public class GameManager : MonoBehaviour
 
         // Disable player movement
         MovementComponent movementComponent = FindObjectOfType<MovementComponent>();
-        if (movementComponent!= null)
+        if (movementComponent != null)
         {
             movementComponent.enabled = false;
         }
 
         // Calculate the average embedding and find the closest word
         float[] averageEmbedding = CalculateAverageEmbedding();
-        if (averageEmbedding!= null)
+        if (averageEmbedding != null)
         {
             string finalEssence = FindClosestWord(averageEmbedding);
             if (!string.IsNullOrEmpty(finalEssence))
             {
                 // Use the full path to find the FinalEssenceText GameObject
                 Transform finalEssenceTextTransform = gameOverUI.transform.Find("/CanvasGameOver/GameOverMenu/Essence/Wood/FinalEssenceText");
-                if (finalEssenceTextTransform!= null)
+                if (finalEssenceTextTransform != null)
                 {
                     TextMeshProUGUI finalEssenceText = finalEssenceTextTransform.GetComponent<TextMeshProUGUI>();
 
-                    if (finalEssenceText!= null)
+                    if (finalEssenceText != null)
                     {
-                        WriteHighScoreToGoogleSheets(finalEssence, score);
+                        WriteHighScoreToGoogleSheets(finalEssence, score, spreadsheetId);
                         finalEssenceText.text = $"{finalEssence}";
+                        Debug.Log("Final Essence Text: " + finalEssence);
                     }
                     else
                     {
@@ -377,18 +414,45 @@ public class GameManager : MonoBehaviour
         }
     }
 
-    private void WriteHighScoreToGoogleSheets(string essence, long score)
-    {
-        var newRow = new List<object>() { essence, score };
-        var valueRange = new ValueRange();
-        valueRange.Values = new List<IList<object>> { newRow };
+   private void WriteHighScoreToGoogleSheets(string essence, long score, string spreadsheetId)
+   {
+       try
+       {
+           Debug.Log("Starting WriteHighScoreToGoogleSheets");
 
-        var appendRequest = sheetsService.Spreadsheets.Values.Append(valueRange, spreadsheetId, range);
-        appendRequest.ValueInputOption = SpreadsheetsResource.ValuesResource.AppendRequest.ValueInputOptionEnum.USERENTERED;
-        var appendResponse = appendRequest.Execute();
+           // Check if spreadsheetId is null or empty
+           if (string.IsNullOrEmpty(spreadsheetId))
+           {
+               Debug.LogError("Spreadsheet ID is null or empty");
+               return;
+           }
 
-        Debug.Log("Added high score to the spreadsheet.");
-    }
+           Debug.Log("Spreadsheet ID: " + spreadsheetId);
+
+           // Create a new row with the essence and score
+           var newRow = new List<object>() { essence, score };
+           Debug.Log("Created new row: " + string.Join(", ", newRow));
+
+           // Create a ValueRange object and set its values
+           var valueRange = new ValueRange();
+           valueRange.Values = new List<IList<object>> { newRow };
+           Debug.Log("Created ValueRange with values: " + JsonConvert.SerializeObject(valueRange.Values));
+
+           // Create an AppendRequest
+           var appendRequest = sheetsService.Spreadsheets.Values.Append(valueRange, spreadsheetId, range);
+           appendRequest.ValueInputOption = SpreadsheetsResource.ValuesResource.AppendRequest.ValueInputOptionEnum.USERENTERED;
+           Debug.Log("Created AppendRequest with ValueInputOption: " + appendRequest.ValueInputOption);
+
+           // Execute the AppendRequest
+           var appendResponse = appendRequest.Execute();
+           Debug.Log("AppendRequest executed successfully. Response: " + JsonConvert.SerializeObject(appendResponse));
+       }
+       catch (Exception ex)
+       {
+           Debug.LogError("Error in WriteHighScoreToGoogleSheets: " + ex.Message);
+           Debug.LogError("Stack Trace: " + ex.StackTrace);
+       }
+   }
 
     
 
@@ -449,44 +513,46 @@ public class GameManager : MonoBehaviour
     }
 
     private float[] CalculateAverageEmbedding()
-{
-    if (collectedWords.Count == 0) return null;
-
-    float[] sumEmbedding = new float[embeddings[collectedWords[0]].Length];
-    foreach (string word in collectedWords)
     {
-        float[] wordEmbedding = embeddings[word];
+        if (collectedWords.Count == 0) return null;
+
+        float[] sumEmbedding = new float[embeddings[collectedWords[0]].Length];
+        foreach (string word in collectedWords)
+        {
+            float[] wordEmbedding = embeddings[word];
+            for (int i = 0; i < sumEmbedding.Length; i++)
+            {
+                sumEmbedding[i] += wordEmbedding[i];
+            }
+        }
+
         for (int i = 0; i < sumEmbedding.Length; i++)
         {
-            sumEmbedding[i] += wordEmbedding[i];
+            sumEmbedding[i] /= collectedWords.Count;
         }
+
+        Debug.Log("Average Embedding: " + string.Join(", ", sumEmbedding));
+        return sumEmbedding;
     }
 
-    for (int i = 0; i < sumEmbedding.Length; i++)
+    private string FindClosestWord(float[] averageEmbedding)
     {
-        sumEmbedding[i] /= collectedWords.Count;
-    }
+        float maxSimilarity = float.NegativeInfinity;
+        string closestWord = null;
 
-    return sumEmbedding;
-}
-
-private string FindClosestWord(float[] averageEmbedding)
-{
-    float maxSimilarity = float.NegativeInfinity;
-    string closestWord = null;
-
-    foreach (var pair in embeddings)
-    {
-        float similarity = CosineSimilarity(averageEmbedding, pair.Value);
-        if (similarity > maxSimilarity)
+        foreach (var pair in embeddings)
         {
-            maxSimilarity = similarity;
-            closestWord = pair.Key;
+            float similarity = CosineSimilarity(averageEmbedding, pair.Value);
+            if (similarity > maxSimilarity)
+            {
+                maxSimilarity = similarity;
+                closestWord = pair.Key;
+            }
         }
-    }
 
-    return closestWord;
-}
+        Debug.Log("Closest Word: " + closestWord + ", Similarity: " + maxSimilarity);
+        return closestWord;
+    }
 
     private void Update()
     {

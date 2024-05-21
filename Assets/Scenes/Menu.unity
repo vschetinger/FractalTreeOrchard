@@ -5969,7 +5969,7 @@ MonoBehaviour:
   rotationSpeed: 10
   targetWord: good
   avoidWord: bad
-  wordSelectionThreshold: 0.5
+  wordSelectionThreshold: 0.2
   maxPointsPerWord: 1000
   maxEnergy: 100
   currentEnergy: 0
