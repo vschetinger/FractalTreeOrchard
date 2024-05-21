@@ -2,6 +2,7 @@ using UnityEngine;
 using System.Collections.Generic;
 using System.IO;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Linq;
 using System.Collections;
 using UnityEngine.Networking;
@@ -19,6 +20,8 @@ using Newtonsoft.Json;
 using Org.BouncyCastle.Crypto;
 using Org.BouncyCastle.OpenSsl;
 using Org.BouncyCastle.Security;
+
+
 
 
 [System.Serializable]
@@ -310,43 +313,47 @@ private IEnumerator FetchHighScores()
     {
         Debug.Log("High scores fetched successfully.");
         string jsonResponse = request.downloadHandler.text;
-        Debug.Log("JSON Response: " + jsonResponse); // Add this line to log the JSON response
+        Debug.Log("JSON Response: " + jsonResponse);
 
-        var response = JsonConvert.DeserializeObject<GoogleSheetsResponse>(jsonResponse);
-        List<IList<object>> values = response.Values;
-
-        // Log the number of rows fetched
-        Debug.Log("Number of rows fetched: " + values.Count);
-
-        // Process the high scores
-        highScores.Clear();
-        foreach (var row in values)
+        try
         {
-            Debug.Log("Row data: " + string.Join(", ", row)); // Add this line to log each row's data
+            // Use a regular expression to extract the values
+            var matches = Regex.Matches(jsonResponse, @"\[\s*""([^""]+)"",\s*""([^""]+)"",\s*""([^""]+)"",\s*""([^""]+)""\s*\]");
 
-            if (row.Count >= 4) // Ensure the row has at least 4 elements
+            if (matches.Count > 0)
             {
-                string essence = row[0].ToString();
-                string targetWord = row[1].ToString();
-                string avoidWord = row[2].ToString();
-                string score = row[3].ToString();
-                highScores.Add($"{essence}: {targetWord}: {avoidWord}: {score}");
+                foreach (Match match in matches)
+                {
+                    if (match.Groups.Count == 5) // 1 for the whole match, 4 for the groups
+                    {
+                        string essence = match.Groups[1].Value;
+                        string targetWord = match.Groups[2].Value;
+                        string avoidWord = match.Groups[3].Value;
+                        string score = match.Groups[4].Value;
+                        highScores.Add($"{essence}: {targetWord}: {avoidWord}: {score}");
+                    }
+                }
+
+                // Sort the high scores from highest to lowest
+                highScores = highScores.OrderByDescending(hs =>
+                {
+                    string[] parts = hs.Split(':');
+                    return long.Parse(parts[3].Trim());
+                }).ToList();
+
+                Debug.Log("High scores processed and sorted: " + string.Join(", ", highScores));
+                DisplayHighScores();
             }
             else
             {
-                Debug.LogWarning("Row does not have enough elements: " + string.Join(", ", row));
+                Debug.LogError("Invalid JSON response format.");
             }
         }
-
-        // Sort the high scores from highest to lowest
-        highScores = highScores.OrderByDescending(hs => 
+        catch (Exception ex)
         {
-            string[] parts = hs.Split(':');
-            return long.Parse(parts[3].Trim());
-        }).ToList();
-
-        Debug.Log("High scores processed and sorted: " + string.Join(", ", highScores));
-        DisplayHighScores();
+            Debug.LogError("Error processing high scores: " + ex.Message);
+            Debug.LogError("Stack Trace: " + ex.StackTrace);
+        }
     }
     else
     {
@@ -358,7 +365,7 @@ private IEnumerator FetchHighScores()
 
     private string FormatHighScore(string essence, string targetWord, string avoidWord, string score)
     {
-        return $"{essence}    <color=red>{avoidWord}</color>-<color=green>{targetWord}</color>    {score}";
+        return $"{essence}    <color=red>{avoidWord}</color>-<color=green>{targetWord}</color>    <color=yellow>{score}</color>";
     }
     private void DisplayHighScores()
     {
@@ -946,6 +953,8 @@ private IEnumerator FetchHighScores()
 
         return new string[0];
     }
+
+    
 }
 
 [Serializable]
@@ -988,8 +997,11 @@ public class GoogleSheetsPayload
     public List<IList<object>> Values { get; set; }
 }
 
+[System.Serializable]
 public class GoogleSheetsResponse
 {
-    [JsonProperty("values")]
-    public List<IList<object>> Values { get; set; }
+    public string range;
+    public string majorDimension;
+    public List<List<object>> values;
 }
+
