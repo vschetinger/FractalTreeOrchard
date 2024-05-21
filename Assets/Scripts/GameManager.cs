@@ -71,11 +71,18 @@ public class GameManager : MonoBehaviour
 
     //Highscore spreadsheet
     private static readonly string[] Scopes = { SheetsService.Scope.Spreadsheets };
-    private static readonly string ApplicationName = "Your Application Name";
+    private static readonly string ApplicationName = "Fractal Tree Orchard";
     private SheetsService sheetsService;
     public string spreadsheetId = "1FOAmGBrqS8n0QS9hmFCy7ZF0z6KLb8OioV7SV5fZYJo";
-    private string range = "Sheet1!A1:B";  // Adjust the range as needed
+    private string range = "Sheet1!A1:D";  // Adjust the range as needed
     private string accessToken; // Store the access token
+
+    private List<string> highScores = new List<string>();
+    public TextMeshProUGUI highScoresText;
+    private float highScoreUpdateInterval = 0.5f;
+    private float highScoreUpdateTimer = 0f;
+    public float scrollSpeed = 20f; // Speed at which the text scrolls
+
 
 
 
@@ -153,7 +160,20 @@ public class GameManager : MonoBehaviour
  private IEnumerator GetAccessToken()
 {
     string filePath = Path.Combine(Application.streamingAssetsPath, "fractaltreeorchard-highscores-77d4e8fb7122.json");
-    string url = "file://" + filePath;
+    string url;
+
+    if (Application.platform == RuntimePlatform.WebGLPlayer)
+    {
+        // For WebGL, use the URL directly
+        url = filePath;
+    }
+    else
+    {
+        // For other platforms, use the file:// prefix
+        url = "file://" + filePath;
+    }
+
+    Debug.Log("Credentials file URL: " + url);
 
     using (UnityWebRequest www = UnityWebRequest.Get(url))
     {
@@ -224,7 +244,10 @@ public class GameManager : MonoBehaviour
             };
 
             // Make the request to the token endpoint
-            using (UnityWebRequest tokenRequest = UnityWebRequest.Post("https://oauth2.googleapis.com/token", requestBody))
+            string tokenUrl = "https://oauth2.googleapis.com/token";
+            Debug.Log("Token request URL: " + tokenUrl);
+
+            using (UnityWebRequest tokenRequest = UnityWebRequest.Post(tokenUrl, requestBody))
             {
                 yield return tokenRequest.SendWebRequest();
 
@@ -233,6 +256,7 @@ public class GameManager : MonoBehaviour
                     var tokenResponse = JsonConvert.DeserializeObject<Dictionary<string, string>>(tokenRequest.downloadHandler.text);
                     accessToken = tokenResponse["access_token"];
                     Debug.Log("Access token successfully obtained.");
+                    StartCoroutine(FetchHighScores());
                 }
                 else
                 {
@@ -246,17 +270,126 @@ public class GameManager : MonoBehaviour
         }
     }
 }
-    private string Base64UrlEncode(string input)
+
+private string Base64UrlEncode(string input)
+{
+    var bytes = Encoding.UTF8.GetBytes(input);
+    return Convert.ToBase64String(bytes).TrimEnd('=').Replace('+', '-').Replace('/', '_');
+}
+
+private string Base64UrlEncode(byte[] input)
+{
+    return Convert.ToBase64String(input).TrimEnd('=').Replace('+', '-').Replace('/', '_');
+}
+
+
+private IEnumerator FetchHighScores()
+{
+    Debug.Log("Fetching high scores...");
+    Debug.Log("Access Token: " + accessToken);
+
+    // Check if accessToken is null or empty
+    if (string.IsNullOrEmpty(accessToken))
     {
-        var bytes = Encoding.UTF8.GetBytes(input);
-        return Convert.ToBase64String(bytes).TrimEnd('=').Replace('+', '-').Replace('/', '_');
+        Debug.LogError("Access token is null or empty. Cannot fetch high scores.");
+        yield break;
     }
 
-    private string Base64UrlEncode(byte[] input)
-    {
-        return Convert.ToBase64String(input).TrimEnd('=').Replace('+', '-').Replace('/', '_');
-    }
+    // Create the request URL
+    string url = $"https://sheets.googleapis.com/v4/spreadsheets/{spreadsheetId}/values/{range}?access_token={accessToken}";
+    Debug.Log("Request URL: " + url);
 
+    // Create the UnityWebRequest
+    UnityWebRequest request = UnityWebRequest.Get(url);
+    request.SetRequestHeader("Authorization", "Bearer " + accessToken);
+
+    // Send the request
+    yield return request.SendWebRequest();
+
+    if (request.result == UnityWebRequest.Result.Success)
+    {
+        Debug.Log("High scores fetched successfully.");
+        string jsonResponse = request.downloadHandler.text;
+        Debug.Log("JSON Response: " + jsonResponse); // Add this line to log the JSON response
+
+        var response = JsonConvert.DeserializeObject<GoogleSheetsResponse>(jsonResponse);
+        List<IList<object>> values = response.Values;
+
+        // Log the number of rows fetched
+        Debug.Log("Number of rows fetched: " + values.Count);
+
+        // Process the high scores
+        highScores.Clear();
+        foreach (var row in values)
+        {
+            Debug.Log("Row data: " + string.Join(", ", row)); // Add this line to log each row's data
+
+            if (row.Count >= 4) // Ensure the row has at least 4 elements
+            {
+                string essence = row[0].ToString();
+                string targetWord = row[1].ToString();
+                string avoidWord = row[2].ToString();
+                string score = row[3].ToString();
+                highScores.Add($"{essence}: {targetWord}: {avoidWord}: {score}");
+            }
+            else
+            {
+                Debug.LogWarning("Row does not have enough elements: " + string.Join(", ", row));
+            }
+        }
+
+        // Sort the high scores from highest to lowest
+        highScores = highScores.OrderByDescending(hs => 
+        {
+            string[] parts = hs.Split(':');
+            return long.Parse(parts[3].Trim());
+        }).ToList();
+
+        Debug.Log("High scores processed and sorted: " + string.Join(", ", highScores));
+        DisplayHighScores();
+    }
+    else
+    {
+        Debug.LogError("Failed to fetch high scores: " + request.error);
+        Debug.LogError("Response Code: " + request.responseCode);
+        Debug.LogError("Error Message: " + request.downloadHandler.text);
+    }
+}
+
+    private string FormatHighScore(string essence, string targetWord, string avoidWord, string score)
+    {
+        return $"{essence}    <color=red>{avoidWord}</color>-<color=green>{targetWord}</color>    {score}";
+    }
+    private void DisplayHighScores()
+    {
+        if (highScoresText == null)
+        {
+            Debug.LogError("HighScoresText is not assigned.");
+            return;
+        }
+
+        StringBuilder displayText = new StringBuilder();
+        foreach (string highScore in highScores)
+        {
+            // Split the high score entry into its components
+            string[] parts = highScore.Split(':');
+            if (parts.Length == 4)
+            {
+                string essence = parts[0].Trim();
+                string targetWord = parts[1].Trim();
+                string avoidWord = parts[2].Trim();
+                string score = parts[3].Trim();
+
+                // Format the high score entry
+                displayText.AppendLine(FormatHighScore(essence, targetWord, avoidWord, score));
+            }
+        }
+
+        highScoresText.text = displayText.ToString();
+
+        // Reset the position of the text to the bottom of the screen
+        highScoresText.transform.localPosition = new Vector3(highScoresText.transform.localPosition.x, -Screen.height/2, highScoresText.transform.localPosition.z);
+    }
 
     private IEnumerator LoadGameParameters()
     {
@@ -475,7 +608,7 @@ public class GameManager : MonoBehaviour
 
                     if (finalEssenceText != null)
                     {
-                        StartCoroutine(WriteHighScoreToGoogleSheets(finalEssence, score, spreadsheetId));
+                        StartCoroutine(WriteHighScoreToGoogleSheets(finalEssence, targetWord, avoidWord, score, spreadsheetId));
                         finalEssenceText.text = $"{finalEssence}";
                         Debug.Log("Final Essence Text: " + finalEssence);
                     }
@@ -492,68 +625,69 @@ public class GameManager : MonoBehaviour
         }
     }
 
-   private IEnumerator WriteHighScoreToGoogleSheets(string essence, long score, string spreadsheetId)
-{
-    Debug.Log("Starting WriteHighScoreToGoogleSheets");
-
-    // Check if spreadsheetId is null or empty
-    if (string.IsNullOrEmpty(spreadsheetId))
+ private IEnumerator WriteHighScoreToGoogleSheets(string essence, string targetWord, string avoidWord, long score, string spreadsheetId)
     {
-        Debug.LogError("Spreadsheet ID is null or empty");
-        yield break;
-    }
+        Debug.Log("Starting WriteHighScoreToGoogleSheets");
 
-    Debug.Log("Spreadsheet ID: " + spreadsheetId);
-
-    // Create a new row with the essence and score
-    var newRow = new List<object>() { essence, score };
-    Debug.Log("Created new row: " + string.Join(", ", newRow));
-
-    // Create a GoogleSheetsPayload object and set its values
-    var payload = new GoogleSheetsPayload
-    {
-        Values = new List<IList<object>> { newRow }
-    };
-
-    Debug.Log("Created GoogleSheetsPayload with values: " + JsonConvert.SerializeObject(payload.Values));
-
-    // Serialize the GoogleSheetsPayload object to JSON
-    string jsonPayload = JsonConvert.SerializeObject(payload);
-    Debug.Log("JSON Payload: " + jsonPayload);
-
-    // Create the request URL
-    string url = $"https://sheets.googleapis.com/v4/spreadsheets/{spreadsheetId}/values/{range}:append?valueInputOption=USER_ENTERED";
-
-    // Create the UnityWebRequest
-    UnityWebRequest request = new UnityWebRequest(url, "POST");
-    byte[] bodyRaw = Encoding.UTF8.GetBytes(jsonPayload);
-    request.uploadHandler = new UploadHandlerRaw(bodyRaw);
-    request.downloadHandler = new DownloadHandlerBuffer();
-    request.SetRequestHeader("Content-Type", "application/json");
-    request.SetRequestHeader("Authorization", "Bearer " + accessToken);
-
-    // Send the request
-    yield return request.SendWebRequest();
-
-    try
-    {
-        if (request.result == UnityWebRequest.Result.Success)
+        // Check if spreadsheetId is null or empty
+        if (string.IsNullOrEmpty(spreadsheetId))
         {
-            Debug.Log("AppendRequest executed successfully. Response: " + request.downloadHandler.text);
+            Debug.LogError("Spreadsheet ID is null or empty");
+            yield break;
         }
-        else
+
+        Debug.Log("Spreadsheet ID: " + spreadsheetId);
+
+        // Create a new row with the essence, targetWord, avoidWord, and score
+        var newRow = new List<object>() { essence, targetWord, avoidWord, score };
+        Debug.Log("Created new row: " + string.Join(", ", newRow));
+
+        // Create a GoogleSheetsPayload object and set its values
+        var payload = new GoogleSheetsPayload
         {
-            Debug.LogError("Error in WriteHighScoreToGoogleSheets: " + request.error);
-            Debug.LogError("Response Code: " + request.responseCode);
-            Debug.LogError("Error Message: " + request.downloadHandler.text);
+            Values = new List<IList<object>> { newRow }
+        };
+
+        Debug.Log("Created GoogleSheetsPayload with values: " + JsonConvert.SerializeObject(payload.Values));
+
+        // Serialize the GoogleSheetsPayload object to JSON
+        string jsonPayload = JsonConvert.SerializeObject(payload);
+        Debug.Log("JSON Payload: " + jsonPayload);
+
+        // Create the request URL
+        string url = $"https://sheets.googleapis.com/v4/spreadsheets/{spreadsheetId}/values/{range}:append?valueInputOption=USER_ENTERED";
+        Debug.Log("Request URL: " + url);
+
+        // Create the UnityWebRequest
+        UnityWebRequest request = new UnityWebRequest(url, "POST");
+        byte[] bodyRaw = Encoding.UTF8.GetBytes(jsonPayload);
+        request.uploadHandler = new UploadHandlerRaw(bodyRaw);
+        request.downloadHandler = new DownloadHandlerBuffer();
+        request.SetRequestHeader("Content-Type", "application/json");
+        request.SetRequestHeader("Authorization", "Bearer " + accessToken);
+
+        // Send the request
+        yield return request.SendWebRequest();
+
+        try
+        {
+            if (request.result == UnityWebRequest.Result.Success)
+            {
+                Debug.Log("AppendRequest executed successfully. Response: " + request.downloadHandler.text);
+            }
+            else
+            {
+                Debug.LogError("Error in WriteHighScoreToGoogleSheets: " + request.error);
+                Debug.LogError("Response Code: " + request.responseCode);
+                Debug.LogError("Error Message: " + request.downloadHandler.text);
+            }
+        }
+        catch (Exception ex)
+        {
+            Debug.LogError("Error in WriteHighScoreToGoogleSheets: " + ex.Message);
+            Debug.LogError("Stack Trace: " + ex.StackTrace);
         }
     }
-    catch (Exception ex)
-    {
-        Debug.LogError("Error in WriteHighScoreToGoogleSheets: " + ex.Message);
-        Debug.LogError("Stack Trace: " + ex.StackTrace);
-    }
-}
 
 
     
@@ -572,6 +706,7 @@ public class GameManager : MonoBehaviour
             Debug.LogError("CanvasCentral or CanvasHelp not assigned in the Inspector.");
         }
         StartCoroutine(GetAccessToken());
+        
     }
 
     private void SelectRandomWords()
@@ -686,6 +821,17 @@ public class GameManager : MonoBehaviour
             {
                 GameOver();
                 gameOverCalled = true;
+            }
+        }
+        if (highScoresText != null)
+        {
+            // Move the text upwards
+            highScoresText.transform.Translate(Vector3.up * scrollSpeed * Time.deltaTime);
+
+            // Optionally, reset the position if it goes too far
+            if (highScoresText.transform.localPosition.y > Screen.height)
+            {
+                highScoresText.transform.localPosition = new Vector3(highScoresText.transform.localPosition.x, -Screen.height, highScoresText.transform.localPosition.z);
             }
         }   
     }
@@ -837,6 +983,12 @@ public class JsonCredentialParameters
 }
 
 public class GoogleSheetsPayload
+{
+    [JsonProperty("values")]
+    public List<IList<object>> Values { get; set; }
+}
+
+public class GoogleSheetsResponse
 {
     [JsonProperty("values")]
     public List<IList<object>> Values { get; set; }
