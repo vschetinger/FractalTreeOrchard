@@ -9,7 +9,7 @@ public class FractalTree : MonoBehaviour
     public int branches = 2;
     private int depth;
 
-    public float rotationSpeed = 20f;
+    public float rotationSpeed = 3f;
     public float oscillationSpeed = 1f; // Speed of the oscillation
     public float oscillationAmplitude = 0.5f; // Amplitude of the oscillation
     private Vector3 initialLocalPosition;
@@ -136,7 +136,7 @@ void Update()
         {
             // Spawn a fruit
             //Debug.Log("Fruit");
-            Vector3 fruitPosition = transform.position + transform.up * transform.localScale.y * 1.1f;
+            Vector3 fruitPosition = transform.position + transform.up * transform.localScale.y * 1.25f;
             GameObject fruit = Instantiate(fruitPrefab, fruitPosition, Quaternion.identity);
             fruit.transform.SetParent(transform, true);
 

@@ -5,6 +5,8 @@ TagManager:
   serializedVersion: 2
   tags:
   - GameOverMenu
+  - Fruit
+  - Bee
   layers:
   - Default
   - TransparentFX

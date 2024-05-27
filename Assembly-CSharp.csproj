@@ -59,11 +59,15 @@
     <UnityVersion>2022.3.4f1</UnityVersion>
   </PropertyGroup>
   <ItemGroup>
-    <Analyzer Include="/Users/vschetinger/.vscode/extensions/visualstudiotoolsforunity.vstuc-1.0.1/Analyzers/Microsoft.Unity.Analyzers.dll" />
+    <Analyzer Include="/Users/vschetinger/.vscode/extensions/visualstudiotoolsforunity.vstuc-1.0.2/Analyzers/Microsoft.Unity.Analyzers.dll" />
     <Analyzer Include="/Applications/Unity/Hub/Editor/2022.3.4f1/Unity.app/Contents/Tools/Unity.SourceGenerators/Unity.SourceGenerators.dll" />
     <Analyzer Include="/Applications/Unity/Hub/Editor/2022.3.4f1/Unity.app/Contents/Tools/Unity.SourceGenerators/Unity.Properties.SourceGenerator.dll" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Assets/Scripts/OverlayText.cs" />
+    <Compile Include="Assets/Scripts/BeeCollectible.cs" />
+    <Compile Include="Assets/Scripts/FaceCamera.cs" />
+    <Compile Include="Assets/Scripts/BeeAgent.cs" />
     <Compile Include="Assets/FractalTree.cs" />
     <Compile Include="Assets/Scripts/LinearMovementInterpolation.cs" />
     <Compile Include="Assets/Scripts/GlobeSpin.cs" />
@@ -81,6 +85,7 @@
     <Compile Include="Assets/Scripts/PrintGameObjectPath.cs" />
     <Compile Include="Assets/Scripts/SceneLoader.cs" />
     <Compile Include="Assets/FractalTreeData.cs" />
+    <Compile Include="Assets/LockRotation.cs" />
     <Compile Include="Assets/Scripts/CameraMovementComponent.cs" />
     <Compile Include="Assets/Samples/OpenAI Unity/0.2.0/Whisper/SaveWav.cs" />
     <Compile Include="Assets/Scripts/Billboard.cs" />
@@ -109,6 +114,7 @@
     <None Include="Assets/TextMesh Pro/Shaders/TMP_Bitmap-Mobile.shader" />
     <None Include="Assets/TextMesh Pro/Fonts/LiberationSans - OFL.txt" />
     <None Include="Assets/TextMesh Pro/Shaders/TMP_SDF-Mobile.shader" />
+    <None Include="Assets/Materials/TextOnTop.shader" />
     <None Include="Assets/TextMesh Pro/Shaders/TMP_Sprite.shader" />
   </ItemGroup>
   <ItemGroup>

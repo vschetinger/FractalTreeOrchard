@@ -38,6 +38,9 @@ public class GameManager : MonoBehaviour
     private static Dictionary<string, float[]> embeddings;
     public static List<string> collectedWords = new List<string>();
 
+    public bool EmbeddingsLoaded { get; private set; }
+
+
     private GameParameters gameParameters;
 
     public Light directionalLight;
@@ -61,7 +64,6 @@ public class GameManager : MonoBehaviour
 
     public string mainMenuScene = "Menu";
 
-    public bool embeddingsLoaded = false;
 
     public Button playButton;
 
@@ -288,6 +290,12 @@ private string Base64UrlEncode(byte[] input)
 
 private IEnumerator FetchHighScores()
 {
+    // Check if highScoresText is assigned
+    if (highScoresText == null)
+    {
+        Debug.LogWarning("HighScoresText is not assigned. Skipping high scores loading.");
+        yield break;
+    }
     Debug.Log("Fetching high scores...");
     Debug.Log("Access Token: " + accessToken);
 
@@ -311,9 +319,9 @@ private IEnumerator FetchHighScores()
 
     if (request.result == UnityWebRequest.Result.Success)
     {
-        Debug.Log("High scores fetched successfully.");
+        //Debug.Log("High scores fetched successfully.");
         string jsonResponse = request.downloadHandler.text;
-        Debug.Log("JSON Response: " + jsonResponse);
+        //Debug.Log("JSON Response: " + jsonResponse);
 
         try
         {
@@ -341,7 +349,7 @@ private IEnumerator FetchHighScores()
                     return long.Parse(parts[3].Trim());
                 }).ToList();
 
-                Debug.Log("High scores processed and sorted: " + string.Join(", ", highScores));
+                //Debug.Log("High scores processed and sorted: " + string.Join(", ", highScores));
                 DisplayHighScores();
             }
             else
@@ -438,6 +446,7 @@ private IEnumerator FetchHighScores()
         if (instance == null)
         {
             instance = this;
+            EmbeddingsLoaded = false;
             if (gameOverUI != null)
             {
                 DontDestroyOnLoad(gameOverUI);
@@ -505,7 +514,7 @@ private IEnumerator FetchHighScores()
                     {
                         ProcessEmbeddings(www.downloadHandler.text);
                         Debug.Log($"Embeddings file '{fileName}' loaded successfully.");
-                        embeddingsLoaded = true;
+                        EmbeddingsLoaded = true;
                         EnablePlayButton();
                         yield break;
                     }
@@ -519,7 +528,7 @@ private IEnumerator FetchHighScores()
                     string[] lines = File.ReadAllLines(filePath);
                     ProcessEmbeddings(string.Join("\n", lines));
                     Debug.Log($"Embeddings file '{fileName}' loaded successfully.");
-                    embeddingsLoaded = true;
+                    EmbeddingsLoaded = true;
                     EnablePlayButton();
                     yield break;
                 }
@@ -659,11 +668,11 @@ private IEnumerator FetchHighScores()
 
         // Serialize the GoogleSheetsPayload object to JSON
         string jsonPayload = JsonConvert.SerializeObject(payload);
-        Debug.Log("JSON Payload: " + jsonPayload);
+        //Debug.Log("JSON Payload: " + jsonPayload);
 
         // Create the request URL
         string url = $"https://sheets.googleapis.com/v4/spreadsheets/{spreadsheetId}/values/{range}:append?valueInputOption=USER_ENTERED";
-        Debug.Log("Request URL: " + url);
+        //Debug.Log("Request URL: " + url);
 
         // Create the UnityWebRequest
         UnityWebRequest request = new UnityWebRequest(url, "POST");
@@ -776,7 +785,7 @@ private IEnumerator FetchHighScores()
             sumEmbedding[i] /= collectedWords.Count;
         }
 
-        Debug.Log("Average Embedding: " + string.Join(", ", sumEmbedding));
+        //Debug.Log("Average Embedding: " + string.Join(", ", sumEmbedding));
         return sumEmbedding;
     }
 
@@ -819,28 +828,44 @@ private IEnumerator FetchHighScores()
 
         if (SceneManager.GetActiveScene().name != mainMenuScene)
         {
-        // Update energy and check for game over only in the game scene
-        currentEnergy -= energyDepletionRate * Time.deltaTime;
-        currentEnergy = Mathf.Clamp(currentEnergy, 0f, maxEnergy);
-        //Debug.Log($"Current Energy: {currentEnergy}");
+            // Update energy and check for game over only in the game scene
+            currentEnergy -= energyDepletionRate * Time.deltaTime;
+            currentEnergy = Mathf.Clamp(currentEnergy, 0f, maxEnergy);
+            //Debug.Log($"Current Energy: {currentEnergy}");
 
-        if (currentEnergy <= 0f && !gameOverCalled)
+            if (IsGameOver() && !gameOverCalled)
+                {
+                    GameOver();
+                    gameOverCalled = true;
+                }
+            if (highScoresText != null)
             {
-                GameOver();
-                gameOverCalled = true;
+                // Move the text upwards
+                highScoresText.transform.Translate(Vector3.up * scrollSpeed * Time.deltaTime);
+
+                // Optionally, reset the position if it goes too far
+                if (highScoresText.transform.localPosition.y > Screen.height)
+                {
+                    highScoresText.transform.localPosition = new Vector3(highScoresText.transform.localPosition.x, -Screen.height, highScoresText.transform.localPosition.z);
+                }
             }
+
         }
-        if (highScoresText != null)
-        {
-            // Move the text upwards
-            highScoresText.transform.Translate(Vector3.up * scrollSpeed * Time.deltaTime);
+    }
+    private bool IsGameOver()
+    {
+        string currentSceneName = SceneManager.GetActiveScene().name;
 
-            // Optionally, reset the position if it goes too far
-            if (highScoresText.transform.localPosition.y > Screen.height)
-            {
-                highScoresText.transform.localPosition = new Vector3(highScoresText.transform.localPosition.x, -Screen.height, highScoresText.transform.localPosition.z);
-            }
-        }   
+        if (currentSceneName == "Scene1" || currentSceneName == "Scene2")
+        {
+            return currentEnergy <= 0f;
+        }
+        else if (currentSceneName == "Scene3")
+        {
+            return BeeAgent.activeBeeAgents.Count == 0;
+        }
+
+        return false;
     }
 
     public static string[] GetAllWords()
