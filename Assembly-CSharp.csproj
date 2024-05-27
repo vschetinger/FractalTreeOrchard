@@ -89,6 +89,7 @@
     <Compile Include="Assets/Scripts/CameraMovementComponent.cs" />
     <Compile Include="Assets/Samples/OpenAI Unity/0.2.0/Whisper/SaveWav.cs" />
     <Compile Include="Assets/Scripts/Billboard.cs" />
+    <Compile Include="Assets/Scripts/SelectionManager.cs" />
     <Compile Include="Assets/Scripts/Collectible.cs" />
     <Compile Include="Assets/Scripts/LightSyncer.cs" />
   </ItemGroup>

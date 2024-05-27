@@ -16,13 +16,13 @@ public class MainMenu : MonoBehaviour
     {
     }
 
-
     public void StartGame()
     {
         PlaySelectMenu.SetActive(true);
     }
 
-    public void LoadScene(string sceneName){
+    public void LoadScene(string sceneName)
+    {
         SceneManager.LoadScene(sceneName);
     }
 
@@ -30,5 +30,25 @@ public class MainMenu : MonoBehaviour
     {
         Application.Quit();
         Debug.Log("Quit Game");
+    }
+
+    public void StartSwarmMode()
+    {
+        // Get the selection from SelectionManager
+        SelectionManager.StartSelection selection = SelectionManager.Instance.GetStartSelection();
+
+        // Validate the word using GameManager
+        if (GameManager.GetEmbedding(selection.keyword) != null)
+        {
+            // Save the struct inside GameManager
+            GameManager.instance.SetStartSelection(selection);
+
+            // Load Scene3
+            SceneManager.LoadScene("Scene3");
+        }
+        else
+        {
+            Debug.LogError("Invalid word selected. Please select a valid word.");
+        }
     }
 }

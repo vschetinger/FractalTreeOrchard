@@ -1,8 +1,11 @@
 using UnityEngine;
 using System.Collections.Generic;
+using TMPro;
+
 public class BeeAgent : MonoBehaviour
 {
     private bool embeddingsLoaded = false;
+    public TextMeshProUGUI textBeeInfo = null;
 
     public static List<BeeAgent> activeBeeAgents = new List<BeeAgent>();
 
@@ -29,6 +32,9 @@ public class BeeAgent : MonoBehaviour
 
     [Header("Bee Sense")]
     public string beeWord;
+
+    [Header("Start Area")]
+    public GameObject startArea; // Reference to the Plane GameObject
 
     void Start()
     {
@@ -60,9 +66,15 @@ public class BeeAgent : MonoBehaviour
 
         // Add and configure the AgentPathLine component
         pathLine = gameObject.AddComponent<AgentPathLine>();
-        //Debug.Log("BeeAgent: AgentPathLine component added.");
 
-        
+        // Check if GameManager has a StartSelection struct and use it to initialize the bee
+        var startSelection = GameManager.instance.GetStartSelection();
+        if (startSelection.HasValue)
+        {
+            beeWord = startSelection.Value.keyword;
+            SetStartPosition(startSelection.Value.position);
+        }
+        UpdateBeeText();
     }
 
     private void OnEnable()
@@ -96,6 +108,7 @@ public class BeeAgent : MonoBehaviour
             }
 
             ConsumeEnergy();
+            UpdateBeeText();
         }
         else
         {
@@ -107,6 +120,14 @@ public class BeeAgent : MonoBehaviour
 
         // Limit the bee's height dynamically based on the target's height
         LimitHeight();
+    }
+
+    void UpdateBeeText()
+    {
+        if (textBeeInfo != null)
+        {
+            textBeeInfo.text = $"Sense: {beeWord}\nEnergy: {energy:F1}";
+        }
     }
 
     void MoveTowardsTarget()
@@ -144,13 +165,11 @@ public class BeeAgent : MonoBehaviour
     {
         // Save the position where the fruit was caught
         pathLine.AddPathPosition(position);
-        //Debug.Log($"BeeAgent: Registered fruit collision at position {position}. Path position added.");
     }
 
     void FindNewTarget()
     {
         GameObject[] fruits = GameObject.FindGameObjectsWithTag("Fruit");
-        //Debug.Log("Fruits found: " + fruits.Length);
         if (fruits.Length > 0)
         {
             float bestScore = float.MinValue;
@@ -160,7 +179,6 @@ public class BeeAgent : MonoBehaviour
             {
                 BeeCollectible collectible = fruit.GetComponent<BeeCollectible>();
                 string word = collectible?.GetWord();
-                //Debug.Log("Collectible: " + word );
 
                 if (!string.IsNullOrEmpty(word))
                 {
@@ -203,6 +221,34 @@ public class BeeAgent : MonoBehaviour
                 transform.position = new Vector3(transform.position.x, targetHeight + 1f, transform.position.z);
             }
         }
+    }
+
+    void SetStartPosition(Vector2 normalizedPosition)
+    {
+        if (startArea == null)
+        {
+            Debug.LogError("StartArea is not assigned in BeeAgent.");
+            return;
+        }
+
+        // Get the bounds of the start area
+        Renderer renderer = startArea.GetComponent<Renderer>();
+        if (renderer == null)
+        {
+            Debug.LogError("StartArea does not have a Renderer component.");
+            return;
+        }
+
+        Bounds bounds = renderer.bounds;
+
+        // Calculate the start position based on the normalized position
+        float xPos = Mathf.Lerp(bounds.min.x, bounds.max.x, normalizedPosition.x);
+        float zPos = Mathf.Lerp(bounds.min.z, bounds.max.z, normalizedPosition.y);
+        float yPos = bounds.center.y; // Use the height of the plane
+
+        transform.position = new Vector3(xPos, yPos, zPos);
+        Debug.Log($"BeeAgent: Set start position to ({xPos}, {yPos}, {zPos}).");
+        pathLine.AddPathPosition(transform.position);
     }
 }
 

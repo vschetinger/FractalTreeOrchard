@@ -88,7 +88,17 @@ public class GameManager : MonoBehaviour
     private float highScoreUpdateTimer = 0f;
     public float scrollSpeed = 20f; // Speed at which the text scrolls
 
+    private SelectionManager.StartSelection? startSelection;
 
+    public void SetStartSelection(SelectionManager.StartSelection selection)
+    {
+        startSelection = selection;
+    }
+
+    public SelectionManager.StartSelection? GetStartSelection()
+    {
+        return startSelection;
+    }
 
 
     public void AToggleHelp()
@@ -826,6 +836,18 @@ private IEnumerator FetchHighScores()
             directionalLight.transform.rotation = Quaternion.Euler(currentRotation, -30f, 0f);
         }
 
+        if (highScoresText != null && SceneManager.GetActiveScene().name == mainMenuScene)
+            {
+                // Move the text upwards
+                highScoresText.transform.Translate(Vector3.up * scrollSpeed * Time.deltaTime);
+
+                // Optionally, reset the position if it goes too far
+                if (highScoresText.transform.localPosition.y > Screen.height)
+                {
+                    highScoresText.transform.localPosition = new Vector3(highScoresText.transform.localPosition.x, -Screen.height, highScoresText.transform.localPosition.z);
+                }
+            }
+
         if (SceneManager.GetActiveScene().name != mainMenuScene)
         {
             // Update energy and check for game over only in the game scene
@@ -838,17 +860,7 @@ private IEnumerator FetchHighScores()
                     GameOver();
                     gameOverCalled = true;
                 }
-            if (highScoresText != null)
-            {
-                // Move the text upwards
-                highScoresText.transform.Translate(Vector3.up * scrollSpeed * Time.deltaTime);
-
-                // Optionally, reset the position if it goes too far
-                if (highScoresText.transform.localPosition.y > Screen.height)
-                {
-                    highScoresText.transform.localPosition = new Vector3(highScoresText.transform.localPosition.x, -Screen.height, highScoresText.transform.localPosition.z);
-                }
-            }
+            
 
         }
     }
