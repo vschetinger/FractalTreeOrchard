@@ -46,7 +46,7 @@ public class BeeCollectible : MonoBehaviour
                 }
 
                 // Handle interaction with fruit (e.g., increase energy, etc.)
-                beeAgent.energy += 15;  // Example: increase energy by 50 when colliding with a fruit
+                beeAgent.energy += 5;  // Example: increase energy by 50 when colliding with a fruit
                 Destroy(gameObject);  // Example: destroy the fruit
             }
         }
