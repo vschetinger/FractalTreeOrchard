@@ -770,7 +770,12 @@ private IEnumerator FetchHighScores()
         }
 
         // Select new random words for the next game
-        SelectRandomWords();
+        string currentSceneName = SceneManager.GetActiveScene().name;
+
+        if (currentSceneName == "Scene1" || currentSceneName == "Scene2")
+        {
+            SelectRandomWords();
+        }
 
         // Reload the current scene to restart the game
         SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex);

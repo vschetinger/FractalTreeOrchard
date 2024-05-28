@@ -1,5 +1,6 @@
 using UnityEngine;
 using TMPro;
+using UnityEngine.SceneManagement;
 
 public class TextMatrixOverlay : MonoBehaviour
 {
@@ -41,10 +42,23 @@ public class TextMatrixOverlay : MonoBehaviour
             string targetWord = GameManager.instance.targetWord;
             string avoidWord = GameManager.instance.avoidWord;
 
-            textMatrix.text = $"Score: {GameManager.score}\n\n" +
-                            $"Target Word: {targetWord}\n" +
-                            $"Avoid Word: {avoidWord}\n\n" +
-                            $"Collected Words:\n{collectedWordsText}";
+            string currentSceneName = SceneManager.GetActiveScene().name;
+
+            if (currentSceneName == "Scene3")
+            {
+                textMatrix.text = $"Score: {GameManager.score}\n\n" +
+                                 $"Collected Words:\n{collectedWordsText}";
+            }
+            else
+            {
+                targetWord = GameManager.instance.targetWord;
+                avoidWord = GameManager.instance.avoidWord;
+
+                textMatrix.text = $"Score: {GameManager.score}\n\n" +
+                                 $"Target Word: {targetWord}\n" +
+                                 $"Avoid Word: {avoidWord}\n\n" +
+                                 $"Collected Words:\n{collectedWordsText}";
+            }
         }
     }
 }

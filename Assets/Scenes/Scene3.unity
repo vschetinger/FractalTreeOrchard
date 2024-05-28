@@ -927,7 +927,7 @@ MonoBehaviour:
   speed: 6.9
   maxJumpForce: 6.05
   minJumpForce: 2
-  jumpCooldown: 0.2
+  jumpCooldown: 0.25
   energy: 100
   energyConsumptionRate: 3
   mass: 1
@@ -1241,7 +1241,7 @@ MonoBehaviour:
   hasFruit: 1
   fruitProbability: 0.3
   fruitPrefab: {fileID: 3213631082706445035, guid: 637664dd05cf54d40906b9da36e78293, type: 3}
-  baseWord: drill
+  baseWord: stream
 --- !u!1 &382202339
 GameObject:
   m_ObjectHideFlags: 0
@@ -1300,7 +1300,7 @@ MonoBehaviour:
   hasFruit: 1
   fruitProbability: 0.3
   fruitPrefab: {fileID: 3213631082706445035, guid: 637664dd05cf54d40906b9da36e78293, type: 3}
-  baseWord: cigar
+  baseWord: chord
 --- !u!1 &440901618
 GameObject:
   m_ObjectHideFlags: 0
@@ -2154,7 +2154,7 @@ MonoBehaviour:
   hasFruit: 1
   fruitProbability: 0.3
   fruitPrefab: {fileID: 3213631082706445035, guid: 637664dd05cf54d40906b9da36e78293, type: 3}
-  baseWord: banana
+  baseWord: peel
 --- !u!1 &840508953
 GameObject:
   m_ObjectHideFlags: 0
@@ -2765,7 +2765,7 @@ MonoBehaviour:
   hasFruit: 1
   fruitProbability: 0.3
   fruitPrefab: {fileID: 3213631082706445035, guid: 637664dd05cf54d40906b9da36e78293, type: 3}
-  baseWord: solitude
+  baseWord: windmill
 --- !u!1 &1135042167
 GameObject:
   m_ObjectHideFlags: 0
@@ -3664,7 +3664,7 @@ MonoBehaviour:
   hasFruit: 1
   fruitProbability: 0.3
   fruitPrefab: {fileID: 3213631082706445035, guid: 637664dd05cf54d40906b9da36e78293, type: 3}
-  baseWord: unicorn
+  baseWord: iron
 --- !u!1 &1594499008
 GameObject:
   m_ObjectHideFlags: 0
