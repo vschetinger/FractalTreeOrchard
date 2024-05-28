@@ -760,12 +760,14 @@ private IEnumerator FetchHighScores()
     public void RestartGame()
     {
         // Reset variables and state
+        Debug.Log("Restarting the game...");
         currentEnergy = maxEnergy;
         score = 0;
         collectedWords.Clear();
         gameOverCalled = false;
         if (gameOverUI != null)
         {
+            Debug.Log("Deactivating GO dialog");
             gameOverUI.SetActive(false); // Hide the game over UI
         }
 
@@ -879,6 +881,7 @@ private IEnumerator FetchHighScores()
         }
         else if (currentSceneName == "Scene3")
         {
+            //Debug.Log("No active agent");
             return BeeAgent.activeBeeAgents.Count == 0;
         }
 
