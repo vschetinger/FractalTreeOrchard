@@ -8937,8 +8937,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   directionalLight: {fileID: 448298088}
   rotationSpeed: 10
-  targetWord: sadness
-  avoidWord: pebble
+  targetWord: jesus
+  avoidWord: french
   wordSelectionThreshold: 0.2
   maxPointsPerWord: 1000
   maxEnergy: 100
