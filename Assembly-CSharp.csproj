@@ -90,6 +90,7 @@
     <Compile Include="Assets/Samples/OpenAI Unity/0.2.0/Whisper/SaveWav.cs" />
     <Compile Include="Assets/Scripts/Billboard.cs" />
     <Compile Include="Assets/Scripts/SelectionManager.cs" />
+    <Compile Include="Assets/Scripts/GoogleSpreadsheetManager.cs" />
     <Compile Include="Assets/Scripts/Collectible.cs" />
     <Compile Include="Assets/Scripts/LightSyncer.cs" />
   </ItemGroup>
@@ -109,6 +110,7 @@
     <None Include="Assets/TextMesh Pro/Resources/LineBreaking Leading Characters.txt" />
     <None Include="Assets/TextMesh Pro/Shaders/TMPro_Properties.cginc" />
     <None Include="Assets/TextMesh Pro/Shaders/TMPro_Surface.cginc" />
+    <None Include="Assets/StreamingAssets/openai_embeddings_150d95mb.txt" />
     <None Include="Assets/TextMesh Pro/Resources/LineBreaking Following Characters.txt" />
     <None Include="Assets/TextMesh Pro/Shaders/TMP_SDF-Mobile Masking.shader" />
     <None Include="Assets/TextMesh Pro/Shaders/TMP_SDF Overlay.shader" />
@@ -116,6 +118,7 @@
     <None Include="Assets/TextMesh Pro/Fonts/LiberationSans - OFL.txt" />
     <None Include="Assets/TextMesh Pro/Shaders/TMP_SDF-Mobile.shader" />
     <None Include="Assets/Materials/TextOnTop.shader" />
+    <None Include="Assets/StreamingAssets/openai_embeddings50d95mb.txt" />
     <None Include="Assets/TextMesh Pro/Shaders/TMP_Sprite.shader" />
   </ItemGroup>
   <ItemGroup>

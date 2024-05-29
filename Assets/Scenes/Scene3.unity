@@ -925,9 +925,9 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   textBeeInfo: {fileID: 1719215683}
   speed: 6.9
-  maxJumpForce: 6.05
-  minJumpForce: 2
-  jumpCooldown: 0.25
+  maxJumpForce: 2
+  minJumpForce: 7
+  jumpCooldown: 0.2
   energy: 100
   energyConsumptionRate: 3
   mass: 1
@@ -1239,9 +1239,9 @@ MonoBehaviour:
   trunkMaterial: {fileID: 2100000, guid: fe6a7ba0564f3f540946a1f52f75a62d, type: 2}
   leafMaterial: {fileID: 2100000, guid: d33e8ae7bb0289f4da3c9f2dba24b1f2, type: 2}
   hasFruit: 1
-  fruitProbability: 0.3
+  fruitProbability: 0.2
   fruitPrefab: {fileID: 3213631082706445035, guid: 637664dd05cf54d40906b9da36e78293, type: 3}
-  baseWord: halberd
+  baseWord: carriage
 --- !u!1 &382202339
 GameObject:
   m_ObjectHideFlags: 0
@@ -1298,9 +1298,9 @@ MonoBehaviour:
   trunkMaterial: {fileID: 2100000, guid: fe6a7ba0564f3f540946a1f52f75a62d, type: 2}
   leafMaterial: {fileID: 2100000, guid: d33e8ae7bb0289f4da3c9f2dba24b1f2, type: 2}
   hasFruit: 1
-  fruitProbability: 0.3
+  fruitProbability: 0.2
   fruitPrefab: {fileID: 3213631082706445035, guid: 637664dd05cf54d40906b9da36e78293, type: 3}
-  baseWord: pinned
+  baseWord: rain
 --- !u!1 &440901618
 GameObject:
   m_ObjectHideFlags: 0
@@ -2152,9 +2152,9 @@ MonoBehaviour:
   trunkMaterial: {fileID: 2100000, guid: fe6a7ba0564f3f540946a1f52f75a62d, type: 2}
   leafMaterial: {fileID: 2100000, guid: d33e8ae7bb0289f4da3c9f2dba24b1f2, type: 2}
   hasFruit: 1
-  fruitProbability: 0.3
+  fruitProbability: 0.2
   fruitPrefab: {fileID: 3213631082706445035, guid: 637664dd05cf54d40906b9da36e78293, type: 3}
-  baseWord: twist
+  baseWord: work
 --- !u!1 &840508953
 GameObject:
   m_ObjectHideFlags: 0
@@ -2763,9 +2763,9 @@ MonoBehaviour:
   trunkMaterial: {fileID: 2100000, guid: fe6a7ba0564f3f540946a1f52f75a62d, type: 2}
   leafMaterial: {fileID: 2100000, guid: d33e8ae7bb0289f4da3c9f2dba24b1f2, type: 2}
   hasFruit: 1
-  fruitProbability: 0.3
+  fruitProbability: 0.2
   fruitPrefab: {fileID: 3213631082706445035, guid: 637664dd05cf54d40906b9da36e78293, type: 3}
-  baseWord: roadkill
+  baseWord: focus
 --- !u!1 &1135042167
 GameObject:
   m_ObjectHideFlags: 0
@@ -3662,9 +3662,9 @@ MonoBehaviour:
   trunkMaterial: {fileID: 2100000, guid: fe6a7ba0564f3f540946a1f52f75a62d, type: 2}
   leafMaterial: {fileID: 2100000, guid: d33e8ae7bb0289f4da3c9f2dba24b1f2, type: 2}
   hasFruit: 1
-  fruitProbability: 0.3
+  fruitProbability: 0.2
   fruitPrefab: {fileID: 3213631082706445035, guid: 637664dd05cf54d40906b9da36e78293, type: 3}
-  baseWord: sunflower
+  baseWord: pancreas
 --- !u!1 &1594499008
 GameObject:
   m_ObjectHideFlags: 0

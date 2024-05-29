@@ -31,23 +31,17 @@ public class BeeCollectible : MonoBehaviour
 
     private void OnTriggerEnter(Collider other)
     {
-        //Debug.Log("BeeCollectible: Trigger detected with: " + other.gameObject.name);
         if (other.CompareTag("Bee"))
         {
             BeeAgent beeAgent = other.GetComponent<BeeAgent>();
             if (beeAgent != null)
             {
-                // Call the method on the BeeAgent to register the collision
-                beeAgent.RegisterFruitCollision(transform.position);
                 string collectedWord = GetWord();
                 if (!string.IsNullOrEmpty(collectedWord))
                 {
-                    GameManager.AddCollectedWord(collectedWord);
+                    beeAgent.RegisterFruitCollision(transform.position, collectedWord);
+                    Destroy(gameObject);  // Example: destroy the fruit
                 }
-
-                // Handle interaction with fruit (e.g., increase energy, etc.)
-                beeAgent.energy += 5;  // Example: increase energy by 50 when colliding with a fruit
-                Destroy(gameObject);  // Example: destroy the fruit
             }
         }
     }

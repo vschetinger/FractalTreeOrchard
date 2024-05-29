@@ -2,6 +2,10 @@ using UnityEngine;
 using System.Collections.Generic;
 using TMPro;
 
+using UnityEngine;
+using System.Collections.Generic;
+using TMPro;
+
 public class BeeAgent : MonoBehaviour
 {
     private bool embeddingsLoaded = false;
@@ -35,6 +39,8 @@ public class BeeAgent : MonoBehaviour
 
     [Header("Start Area")]
     public GameObject startArea; // Reference to the Plane GameObject
+
+    private Vector3 startPosition;
 
     void Start()
     {
@@ -73,6 +79,7 @@ public class BeeAgent : MonoBehaviour
         {
             beeWord = startSelection.Value.keyword;
             SetStartPosition(startSelection.Value.position);
+            startPosition = new Vector3(startSelection.Value.position.x, 0, startSelection.Value.position.y); // Store the starting position
         }
         UpdateBeeText();
     }
@@ -161,10 +168,32 @@ public class BeeAgent : MonoBehaviour
         Destroy(gameObject);
     }
 
-    public void RegisterFruitCollision(Vector3 position)
+    public void RegisterFruitCollision(Vector3 position, string fruitWord)
     {
         // Save the position where the fruit was caught
         pathLine.AddPathPosition(position);
+
+        // Calculate the score based on the fruit word
+        long score = GameManager.CalculatePoints(fruitWord); // Example scoring logic
+
+        // Write data to Google Sheets
+        List<object> rowData = new List<object>
+        {
+            beeWord,
+            fruitWord,
+            score,
+            startPosition.x.ToString("F6", System.Globalization.CultureInfo.InvariantCulture),
+            startPosition.z.ToString("F6", System.Globalization.CultureInfo.InvariantCulture), // Use z for the y-coordinate in 2D space
+            position.x.ToString("F6", System.Globalization.CultureInfo.InvariantCulture),
+            position.z.ToString("F6", System.Globalization.CultureInfo.InvariantCulture), // Use z for the y-coordinate in 2D space
+            System.DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss")
+        };
+        //Debug.Log("RegisterFruitCollision: Access token is " + GoogleSheetsManager.Instance.GetAccessToken()); // Add this line
+        StartCoroutine(GoogleSheetsManager.Instance.WriteDataToGoogleSheets(rowData, "TargetScores")); // Specify the sheet name here
+
+        // Handle interaction with fruit (e.g., increase energy, etc.)
+        energy += 5;  // Example: increase energy by 5 when colliding with a fruit
+        GameManager.AddCollectedWord(fruitWord);
     }
 
     void FindNewTarget()
@@ -251,9 +280,6 @@ public class BeeAgent : MonoBehaviour
         pathLine.AddPathPosition(transform.position);
     }
 }
-
-
-
 
 public class AgentTargetingLine : MonoBehaviour
 {

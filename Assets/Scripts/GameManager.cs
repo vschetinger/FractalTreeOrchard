@@ -79,7 +79,7 @@ public class GameManager : MonoBehaviour
     private static readonly string ApplicationName = "Fractal Tree Orchard";
     private SheetsService sheetsService;
     public string spreadsheetId = "1FOAmGBrqS8n0QS9hmFCy7ZF0z6KLb8OioV7SV5fZYJo";
-    private string range = "Sheet1!A1:D";  // Adjust the range as needed
+    private string range = "HighScores!A1:D";  // Adjust the range as needed
     private string accessToken; // Store the access token
 
     private List<string> highScores = new List<string>();
@@ -113,8 +113,8 @@ public class GameManager : MonoBehaviour
 
     private IEnumerator InitializeGoogleSheets()
     {
-        // Load Google credentials and get the access token
         yield return StartCoroutine(LoadGoogleCredentials());
+        GoogleSheetsManager.Instance.Initialize(accessToken, spreadsheetId);
     }
 
     private IEnumerator LoadGoogleCredentials()
@@ -271,6 +271,7 @@ public class GameManager : MonoBehaviour
                     var tokenResponse = JsonConvert.DeserializeObject<Dictionary<string, string>>(tokenRequest.downloadHandler.text);
                     accessToken = tokenResponse["access_token"];
                     Debug.Log("Access token successfully obtained.");
+                    GoogleSheetsManager.Instance.Initialize(accessToken, spreadsheetId);
                     StartCoroutine(FetchHighScores());
                 }
                 else
@@ -466,7 +467,7 @@ private IEnumerator FetchHighScores()
 
 
             StartCoroutine(LoadEmbeddings());
-            InitializeGoogleSheets();
+            StartCoroutine(LoadGoogleCredentials());
             
             SceneManager.sceneLoaded += OnSceneLoaded;
             currentEnergy = maxEnergy;
@@ -505,7 +506,7 @@ private IEnumerator FetchHighScores()
     {
         embeddings = new Dictionary<string, float[]>();
 
-        string[] fileNames = {"glove.6B.50d.95MB.txt", "glove.6B.50d.txt", "improved_supercompact.txt" };
+        string[] fileNames = {"openai_embeddings_150d95mb.txt","glove.6B.50d.95MB.txt", "glove.6B.50d.txt", "improved_supercompact.txt" };
 
         foreach (string fileName in fileNames)
         {
@@ -603,124 +604,74 @@ private IEnumerator FetchHighScores()
 }
 
 
-    private void GameOver()
+private void GameOver()
+{
+    string currentSceneName = SceneManager.GetActiveScene().name;
+
+
+    // Assuming gameOverUI is the root of your UI hierarchy, e.g., CanvasGameOver
+    if (gameOverUI != null)
     {
-        // Assuming gameOverUI is the root of your UI hierarchy, e.g., CanvasGameOver
-        if (gameOverUI != null)
-        {
-            // Activate the Game Over UI
-            gameOverUI.SetActive(true);
-        }
+        // Activate the Game Over UI
+        gameOverUI.SetActive(true);
+    }
 
-        // Disable player movement
-        MovementComponent movementComponent = FindObjectOfType<MovementComponent>();
-        if (movementComponent != null)
-        {
-            movementComponent.enabled = false;
-        }
+    // Disable player movement
+    MovementComponent movementComponent = FindObjectOfType<MovementComponent>();
+    if (movementComponent != null)
+    {
+        movementComponent.enabled = false;
+    }
 
-        // Calculate the average embedding and find the closest word
-        float[] averageEmbedding = CalculateAverageEmbedding();
-        if (averageEmbedding != null)
+    // Calculate the average embedding and find the closest word
+    float[] averageEmbedding = CalculateAverageEmbedding();
+    if (averageEmbedding != null)
+    {
+        string finalEssence = FindClosestWord(averageEmbedding);
+        if (!string.IsNullOrEmpty(finalEssence))
         {
-            string finalEssence = FindClosestWord(averageEmbedding);
-            if (!string.IsNullOrEmpty(finalEssence))
+            // Use the full path to find the FinalEssenceText GameObject
+            Transform finalEssenceTextTransform = gameOverUI.transform.Find("/CanvasGameOver/GameOverMenu/Essence/Wood/FinalEssenceText");
+            if (finalEssenceTextTransform != null)
             {
-                // Use the full path to find the FinalEssenceText GameObject
-                Transform finalEssenceTextTransform = gameOverUI.transform.Find("/CanvasGameOver/GameOverMenu/Essence/Wood/FinalEssenceText");
-                if (finalEssenceTextTransform != null)
-                {
-                    TextMeshProUGUI finalEssenceText = finalEssenceTextTransform.GetComponent<TextMeshProUGUI>();
+                TextMeshProUGUI finalEssenceText = finalEssenceTextTransform.GetComponent<TextMeshProUGUI>();
 
-                    if (finalEssenceText != null)
+                if (finalEssenceText != null)
+                {
+                    // Prepare the row data
+                    List<object> rowData = new List<object>
                     {
-                        StartCoroutine(WriteHighScoreToGoogleSheets(finalEssence, targetWord, avoidWord, score, spreadsheetId));
-                        finalEssenceText.text = $"{finalEssence}";
-                        Debug.Log("Final Essence Text: " + finalEssence);
-                    }
-                    else
-                    {
-                        Debug.LogError("FinalEssenceText GameObject does not have a TextMeshProUGUI component.");
-                    }
+                        finalEssence,
+                        targetWord,
+                        avoidWord,
+                        score
+                    };
+
+                    // Use the GoogleSheetsManager to write the data
+                    StartCoroutine(GoogleSheetsManager.Instance.WriteDataToGoogleSheets(rowData, "HighScores"));
+
+                    finalEssenceText.text = $"{finalEssence}";
+                    Debug.Log("Final Essence Text: " + finalEssence);
                 }
                 else
                 {
-                    Debug.LogError("Could not find FinalEssenceText GameObject.");
+                    Debug.LogError("FinalEssenceText GameObject does not have a TextMeshProUGUI component.");
                 }
-            }
-        }
-    }
-
- private IEnumerator WriteHighScoreToGoogleSheets(string essence, string targetWord, string avoidWord, long score, string spreadsheetId)
-    {
-        Debug.Log("Starting WriteHighScoreToGoogleSheets");
-
-        // Check if spreadsheetId is null or empty
-        if (string.IsNullOrEmpty(spreadsheetId))
-        {
-            Debug.LogError("Spreadsheet ID is null or empty");
-            yield break;
-        }
-
-        Debug.Log("Spreadsheet ID: " + spreadsheetId);
-
-        // Create a new row with the essence, targetWord, avoidWord, and score
-        var newRow = new List<object>() { essence, targetWord, avoidWord, score };
-        Debug.Log("Created new row: " + string.Join(", ", newRow));
-
-        // Create a GoogleSheetsPayload object and set its values
-        var payload = new GoogleSheetsPayload
-        {
-            Values = new List<IList<object>> { newRow }
-        };
-
-        Debug.Log("Created GoogleSheetsPayload with values: " + JsonConvert.SerializeObject(payload.Values));
-
-        // Serialize the GoogleSheetsPayload object to JSON
-        string jsonPayload = JsonConvert.SerializeObject(payload);
-        //Debug.Log("JSON Payload: " + jsonPayload);
-
-        // Create the request URL
-        string url = $"https://sheets.googleapis.com/v4/spreadsheets/{spreadsheetId}/values/{range}:append?valueInputOption=USER_ENTERED";
-        //Debug.Log("Request URL: " + url);
-
-        // Create the UnityWebRequest
-        UnityWebRequest request = new UnityWebRequest(url, "POST");
-        byte[] bodyRaw = Encoding.UTF8.GetBytes(jsonPayload);
-        request.uploadHandler = new UploadHandlerRaw(bodyRaw);
-        request.downloadHandler = new DownloadHandlerBuffer();
-        request.SetRequestHeader("Content-Type", "application/json");
-        request.SetRequestHeader("Authorization", "Bearer " + accessToken);
-
-        // Send the request
-        yield return request.SendWebRequest();
-
-        try
-        {
-            if (request.result == UnityWebRequest.Result.Success)
-            {
-                Debug.Log("AppendRequest executed successfully. Response: " + request.downloadHandler.text);
             }
             else
             {
-                Debug.LogError("Error in WriteHighScoreToGoogleSheets: " + request.error);
-                Debug.LogError("Response Code: " + request.responseCode);
-                Debug.LogError("Error Message: " + request.downloadHandler.text);
+                Debug.LogError("Could not find FinalEssenceText GameObject.");
             }
         }
-        catch (Exception ex)
-        {
-            Debug.LogError("Error in WriteHighScoreToGoogleSheets: " + ex.Message);
-            Debug.LogError("Stack Trace: " + ex.StackTrace);
-        }
     }
+}
 
 
     
 
     private void Start()
     {
-        SelectRandomWords();
+        //SelectRandomWords();
         // Set the initial state of the canvases
         if (canvasCentral != null && canvasHelp != null)
         {
@@ -862,10 +813,22 @@ private IEnumerator FetchHighScores()
             currentEnergy = Mathf.Clamp(currentEnergy, 0f, maxEnergy);
             //Debug.Log($"Current Energy: {currentEnergy}");
 
-            if (IsGameOver() && !gameOverCalled)
+            if (IsGameOver())
                 {
-                    GameOver();
-                    gameOverCalled = true;
+                    string currentSceneName = SceneManager.GetActiveScene().name;
+                    if (currentSceneName == "Scene1" || currentSceneName == "Scene2")
+                    {
+                        if (!gameOverCalled)
+                        {
+                            GameOver();
+                            gameOverCalled = true;
+                        }
+                    }
+                    else   // Scene3
+                    {
+                        RestartGame();
+                    }
+                    
                 }
             
 
@@ -881,8 +844,12 @@ private IEnumerator FetchHighScores()
         }
         else if (currentSceneName == "Scene3")
         {
-            //Debug.Log("No active agent");
-            return BeeAgent.activeBeeAgents.Count == 0;
+            
+            if (BeeAgent.activeBeeAgents.Count == 0)
+            {
+                Debug.Log("No active agent");
+                return true;
+            }
         }
 
         return false;
@@ -979,7 +946,7 @@ private IEnumerator FetchHighScores()
         }
     }
 
-    public static string[] GetSimilarWords(string word, int count = 5, float threshold = 0.1f)
+    public static string[] GetSimilarWords(string word, int count = 20, float threshold = 0.3f)
     {
         if (embeddings.ContainsKey(word))
         {

@@ -104,12 +104,13 @@ void Update()
         return string.Empty;
     }
 
-    private string GetSimilarWordToBaseWord()
+    private string GetSimilarWordToBaseWord(int count = 15)
     {
-        int count = 15; // Number of similar words to consider
+        // Number of similar words to consider
         string[] similarWords = GameManager.GetSimilarWords(baseWord, count);
         if (similarWords.Length > 0)
         {
+            //Debug.Log($"Base Word: {baseWord}, {similarWords.Length} similar Words: {string.Join(", ", similarWords)}");
             int randomIndex = Random.Range(0, similarWords.Length);
             return similarWords[randomIndex];
         }
@@ -146,7 +147,7 @@ void Update()
             {
                 // Get a random word from the embeddings
                 // Get a similar word to the base word from the embeddings
-                string similarWord = GetSimilarWordToBaseWord();
+                string similarWord = GetSimilarWordToBaseWord(80);
                 textMeshPro.text = similarWord;
             }
             else
