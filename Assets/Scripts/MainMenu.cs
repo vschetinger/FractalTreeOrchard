@@ -18,7 +18,7 @@ public class MainMenu : MonoBehaviour
 
     public void StartGame()
     {
-        PlaySelectMenu.SetActive(true);
+        SceneManager.LoadScene("Scene2");
     }
 
     public void LoadScene(string sceneName)
